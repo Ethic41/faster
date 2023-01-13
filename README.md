@@ -1,3 +1,1 @@
-# Faster
-
-update
+# Faster - one stop fastapi template
