@@ -1,0 +1,29 @@
+[tool.poetry]
+name = "faster"
+version = "0.1.0"
+description = "one stop fastapi template"
+authors = ["Dahir Muhammad Dahir <dahirmuhammad3@gmail.com>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+pytest = "^7.2.0"
+fastapi = {extras = ["all"], version = "^0.89.1"}
+SQLAlchemy = "<1.4"
+pydantic = "^1.10.4"
+passlib = {extras = ["bcrypt"], version = "^1.7.4"}
+python-jose = {extras = ["cryptography"], version = "^3.3.0"}
+python-dotenv = "^0.21.0"
+alembic = "^1.9.1"
+psycopg2-binary = "^2.9.5"
+httpx = "^0.23.3"
+
+[tool.poetry.dev-dependencies]
+pytest-cov = "^4.0.0"
+pytest = "^7.2.0"
+mypy = "^0.770"
+sqlalchemy-stubs = "^0.3"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
