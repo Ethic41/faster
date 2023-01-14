@@ -52,15 +52,15 @@ def check_is_18_above(value: date) -> date | None:
     return value
 
 
-def uppercased(field: str) -> classmethod[Any]:
+def uppercased(field: str) -> Any:
     return validator(field, allow_reuse=True)(make_uppercase)
 
 
-def lowercased(field: str) -> classmethod[Any]:
+def lowercased(field: str) -> Any:
     return validator(field, allow_reuse=True)(make_lowercase)
 
 
-def checkbirthdate(field: str) -> classmethod[Any]:
+def checkbirthdate(field: str) -> Any:
     return validator(field, allow_reuse=True)(check_is_18_above)
 
 
@@ -73,6 +73,6 @@ def clean_string(value: str) -> Optional[str]:
     return None
 
 
-def cleaned(field: str) -> classmethod[Any]:
+def cleaned(field: str) -> Any:
     return validator(field, allow_reuse=True)(clean_string)
 
