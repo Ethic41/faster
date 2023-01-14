@@ -7,11 +7,12 @@
 
 
 import io
+from typing import Any
 import ulid
 
 from app.utils.misc import requester
 from fastapi.datastructures import UploadFile
-import qrcode # type: ignore
+import qrcode
 from io import BytesIO
 from qrcode import constants
 from os import getenv
@@ -19,7 +20,10 @@ from google.cloud import storage
 from PIL import Image, ImageDraw, ImageFont
 
 
-def create_frontend_qr_data(unique_data: str, frontend_var_name: str = ""):
+def create_frontend_qr_data(
+    unique_data: str, 
+    frontend_var_name: str = ""
+) -> str:
     frontend_qr_url = getenv(frontend_var_name, "")
     return f"{frontend_qr_url}{unique_data}"
 
@@ -28,7 +32,7 @@ def create_qr_file(
     data: str, 
     fill_color: str = "black", 
     back_color: str = "white"
-) -> Image.Image:
+) -> Image.Image | Any:
 
     qr = qrcode.QRCode(
         version=None,
@@ -42,7 +46,7 @@ def create_qr_file(
     return image
 
 
-def generate_in_memory_file(qr_image):
+def generate_in_memory_file(qr_image: Image.Image | Any) -> bytes:
     in_memory = BytesIO()
     qr_image.save(in_memory, 'PNG')
     in_memory.seek(0)
@@ -50,17 +54,25 @@ def generate_in_memory_file(qr_image):
     return in_memory_png
 
 
-def resize_image(uploaded_file: UploadFile, new_size=(350, 466)):
+def resize_image(
+    uploaded_file: UploadFile, 
+    new_size: tuple[int, int] = (350, 466)
+) -> Image.Image:
+
     image = Image.open(uploaded_file.file)
     image_out = image.resize(new_size)
     return image_out
 
 
-def get_image(image_bytes):
+def get_image(image_bytes: BytesIO) -> Image.Image:
     return Image.open(image_bytes)
 
 
-def upload_file_to_cloud(in_memory_file, file_name, bucket_name):
+def upload_file_to_cloud(
+    in_memory_file: bytes, 
+    file_name: str, 
+    bucket_name: str
+) -> bool:
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
     img_name = f"{file_name}"
@@ -74,9 +86,9 @@ def create_and_upload_qr_cloud(
     qr_unique_data: str,
     cloud_bucket_var_name: str,
     qr_filename: str,
-    qr_display_text: str = ""
-    
-):
+    qr_display_text: str = "",
+) -> bool:
+
     qr_data = create_frontend_qr_data(qr_unique_data)
     qr_image = create_qr_file(qr_data)
     
@@ -84,11 +96,15 @@ def create_and_upload_qr_cloud(
         qr_image = add_qr_display_text(qr_image, qr_display_text)
     
     in_memory_image = generate_in_memory_file(qr_image)
-    bucket_name = getenv(cloud_bucket_var_name)
+    bucket_name = getenv(cloud_bucket_var_name, "")
     return upload_file_to_cloud(in_memory_image, qr_filename, bucket_name)
 
 
-def add_qr_display_text(qr_image: Image.Image, qr_display_text: str)-> Image.Image:
+def add_qr_display_text(
+    qr_image: Image.Image, 
+    qr_display_text: str
+)-> Image.Image:
+
     width, height = qr_image.size
     new_image = Image.new('RGB', (width, height + 100), (255, 255, 255))
     text_image = Image.new('RGB', (width, 100), (255, 255, 255))
@@ -101,19 +117,25 @@ def add_qr_display_text(qr_image: Image.Image, qr_display_text: str)-> Image.Ima
 
 
 def upload_image_to_cloud(
-    image,
+    image: Image.Image,
     cloud_bucket_var_name: str,
     file_name: str
-):
+) -> str:
     in_memory_image = generate_in_memory_file(image)
-    bucket_name = getenv(cloud_bucket_var_name)
+    bucket_name = getenv(cloud_bucket_var_name, "")
 
     if upload_file_to_cloud(in_memory_image, file_name, bucket_name):
         return f"{getenv('CLOUD_STORAGE_PATH')}{bucket_name}/{file_name}"
     
     raise Exception("Unable to upload image to cloud")
 
-def upload_remote_image_to_cloud(url: str, filename: str, bucket_var_name: str):
+
+def upload_remote_image_to_cloud(
+    url: str, 
+    filename: str, 
+    bucket_var_name: str
+) -> str:
+
     response = requester(url)
     image = get_image(io.BytesIO(response.content))
     return upload_image_to_cloud(image, bucket_var_name, filename)
@@ -122,7 +144,8 @@ def upload_remote_image_to_cloud(url: str, filename: str, bucket_var_name: str):
 def upload_image_file_to_cloud(
     image_file: UploadFile,
     cloud_bucket_var_name: str,
-):
+) -> str:
+    
     resized_image = resize_image(image_file)
     file_name = f"{str(ulid.new())}.png"
     return upload_image_to_cloud(resized_image, cloud_bucket_var_name, file_name)

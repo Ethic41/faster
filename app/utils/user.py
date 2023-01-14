@@ -7,9 +7,10 @@
 
 
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
-from jose import JWTError, jwt # type: ignore
-from passlib.context import CryptContext # type: ignore
+from jose import jwt
+from passlib.context import CryptContext
 import os
 
 
@@ -23,17 +24,20 @@ SECRET_KEY = os.getenv('JWT_SECRET_KEY')
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv('TOKEN_LIFE_SPAN', default=""))
 
 
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    verified: bool = pwd_context.verify(plain_password, hashed_password)
+    return verified
 
 
-def get_password_hash(password):
-    return pwd_context.hash(password)
+def get_password_hash(password: str) -> str:
+    hash: str = pwd_context.hash(password)
+    return hash
 
 
-def create_access_token(data: dict):
+def create_access_token(data: dict[str, Any]) -> str:
     to_encode = data.copy()
-    expire = datetime.now(timezone(timedelta(hours=1))) + timedelta(hours=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.now(timezone(timedelta(hours=1))) + \
+        timedelta(hours=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt: str = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt

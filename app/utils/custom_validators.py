@@ -7,7 +7,7 @@
 
 
 from datetime import date
-from typing import Optional
+from typing import Optional, Any
 from fastapi.exceptions import HTTPException
 from pydantic import validator
 
@@ -24,11 +24,11 @@ def currency_out(amount: float) -> Optional[float]:
     return None
 
 
-def currency_in_val(field: str) -> classmethod:
+def currency_in_val(field: str) -> classmethod[Any]:
     return validator(field, allow_reuse=True)(currency_in)
 
 
-def currency_out_val(field: str) -> classmethod:
+def currency_out_val(field: str) -> classmethod[Any]:
     return validator(field, allow_reuse=True)(currency_out)
 
 
@@ -42,7 +42,7 @@ def make_lowercase(value: str) -> Optional[str]:
     return None
 
 
-def check_is_18_above(value: date):
+def check_is_18_above(value: date) -> date | None:
     if not value:
         return None
     
@@ -52,23 +52,27 @@ def check_is_18_above(value: date):
     return value
 
 
-def uppercased(field: str) -> classmethod:
+def uppercased(field: str) -> classmethod[Any]:
     return validator(field, allow_reuse=True)(make_uppercase)
 
 
-def lowercased(field: str) -> classmethod:
+def lowercased(field: str) -> classmethod[Any]:
     return validator(field, allow_reuse=True)(make_lowercase)
 
 
-def checkbirthdate(field: str) -> classmethod:
+def checkbirthdate(field: str) -> classmethod[Any]:
     return validator(field, allow_reuse=True)(check_is_18_above)
 
 
 def clean_string(value: str) -> Optional[str]:
-    if value is not None: return value.replace(' ', '').replace('-', '').replace('_', '').replace('/', '').replace('\\','')
+    if value is not None:
+
+        return value.replace(' ', '').replace('-', '').replace('_', '').\
+            replace('/', '').replace('\\','')
+    
     return None
 
 
-def cleaned(field: str) -> classmethod:
+def cleaned(field: str) -> classmethod[Any]:
     return validator(field, allow_reuse=True)(clean_string)
 

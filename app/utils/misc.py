@@ -9,24 +9,26 @@
 import re
 from secrets import randbits, token_urlsafe
 from datetime import datetime, timezone, timedelta, date
-from typing import Dict, Optional
+from typing import Any
 from app.mixins.commons import DateRange
 from pathlib import Path
 import requests
 import calendar
-from passlib import pwd # type: ignore
+from passlib import pwd
 
-def gen_email(nin: str = ""):
+
+def gen_email(nin: str = "") -> str:
     nin = nin or str(gen_random_nin())
     return f"{nin}@gmail.com"
 
 
-def gen_random_password():
+def gen_random_password() -> str:
     return token_urlsafe(12)
 
 
-def gen_random_str():
-    return pwd.genphrase(10)
+def gen_random_str() -> str:
+    rand_str: str = pwd.genphrase(10)
+    return rand_str
 
 
 def gen_random_nin() -> int:
@@ -52,34 +54,48 @@ def get_current_time() -> str:
     return now.strftime("%I:%M:%S")
 
 
-def date_diff(date1: date, date2: date):
+def date_diff(date1: date, date2: date) -> int:
     result = date1 - date2
     return result.days
 
 
-def time_diff(time1: str, time2: str, format: str = "%I:%M:%S"):
+def time_diff(
+    time1: str, 
+    time2: str, 
+    format: str = "%I:%M:%S"
+) -> int:
     time_diff = datetime.strptime(time1, format) - datetime.strptime(time2, format)
     return time_diff.seconds
 
 
-def date_days_add(date: date, days: int):
+def date_days_add(date: date, days: int) -> date:
     return date + timedelta(days=days)
 
 
-def get_today_date_range(column_name: str):
-    return DateRange(column_name=column_name, from_date=get_current_date(), to_date=get_current_date())
+def get_today_date_range(column_name: str) -> DateRange:
+    return DateRange(
+        column_name=column_name, 
+        from_date=get_current_date(), 
+        to_date=get_current_date()
+    )
 
 
 def requester(
-    url, 
+    url: str, 
     method: str = "get", 
-    files: Optional[Dict] = None, 
-    data: Optional[Dict] = None, 
-    headers: Optional[Dict] = None,
-    json: Optional[Dict] = None
+    files: dict[str, Any] | None = None, 
+    data: dict[str, Any] | None = None, 
+    headers: dict[str, Any] | None = None,
+    json: dict[str, Any] | None = None
 ) -> requests.Response:
     with requests.Session() as s:
-        response = getattr(s, method)(url, files=files, data=data, json=json, headers=headers)
+        response: requests.Response = getattr(s, method)(
+            url, 
+            files=files, 
+            data=data, 
+            json=json, 
+            headers=headers
+        )
     
     return response
 
@@ -95,7 +111,7 @@ def get_filename_from_path(path: str) -> str:
     return Path(path).name
 
 
-def days_summary(days: int):
+def days_summary(days: int) -> str:
     if days == 0:
         return ""
     
@@ -124,9 +140,15 @@ def days_summary(days: int):
 
 
 def number_of_weekday_btw_dates(day_name: str, from_date: date, to_date: date) -> int:
-    day_mapping = {"monday": calendar.MONDAY, "tuesday": calendar.TUESDAY, \
-        "wednesday": calendar.WEDNESDAY, "thursday": calendar.THURSDAY, "friday": calendar.FRIDAY, \
-        "saturday": calendar.SATURDAY, "sunday": calendar.SUNDAY}
+    day_mapping = {
+        "monday": calendar.MONDAY, 
+        "tuesday": calendar.TUESDAY,
+        "wednesday": calendar.WEDNESDAY, 
+        "thursday": calendar.THURSDAY, 
+        "friday": calendar.FRIDAY,
+        "saturday": calendar.SATURDAY, 
+        "sunday": calendar.SUNDAY
+    }
     
     target_date = day_mapping[day_name.lower()]
     one_day = timedelta(days=1)
