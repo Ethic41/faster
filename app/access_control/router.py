@@ -28,19 +28,12 @@ groups_router = APIRouter(
     status_code=201,
     dependencies=[Depends(deps.HasPermission(['can_create_permission']))]
 )
-def create_permission(
+async def create_permission(
     perm_data: schemas.PermissionCreate,
     dba: Session = Depends(deps.get_db)
 ) -> schemas.PermissionSchema:
-    try:
-        permission = cruds.create_permission(db=dba, perm_data=perm_data)
-    except IntegrityError:
-        raise HTTPException(
-            status_code=403,
-            detail='Duplicate permission not allowed'
-        )
-    else:
-        return permission
+
+    return cruds.create_permission(db=dba, perm_data=perm_data)
 
 
 @perms_router.get(

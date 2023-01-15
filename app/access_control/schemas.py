@@ -21,9 +21,7 @@ class PermissionUpdate(BaseModel):
 
 
 class PermissionSchema(BaseUACSchemaMixin):
-    
-    class Config:
-        orm_mode = True
+    pass
 
 
 class RoleCreate(BaseModel):
@@ -47,9 +45,6 @@ class RemoveRolePermission(BaseModel):
 
 class RoleSchema(BaseUACSchemaMixin):
     permissions: List[PermissionSchema]
-    
-    class Config:
-        orm_mode = True
 
 
 class GroupCreate(BaseModel):
@@ -73,13 +68,8 @@ class RemoveGroupRole(BaseModel):
 
 class GroupSchema(BaseUACSchemaMixin):
     roles: List[RoleSchema]
-    
-    class Config:
-        orm_mode = True
 
 
 class GroupOutSchema(BaseUACSchemaMixin):
-    
-    class Config:
-        orm_mode = True
+    pass
 

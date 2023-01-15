@@ -7,29 +7,37 @@ from app.user import schemas, models
 from app.utils.mail import send_change_password_mail, send_account_create_mail
 from app.utils.misc import gen_random_password
 from app.utils.user import get_password_hash, verify_password
-from app.utils.crud_util import create_model, get_model_by_field_first, list_model
+from app.utils.crud_util import create_model, list_model, ensure_unique_model
 
 
 def create_user(
-    db: Session, 
-    user_data: schemas.UserIn, 
-    autocommit=True, 
-    can_login=False
-):
+    db: Session,
+    user_data: schemas.UserIn,
+    autocommit: bool = True,
+    can_login: bool = False
+) -> models.User:
     user_to_create = schemas.UserCreate(
         **user_data.dict(),
         password_hash="",
         can_login=can_login,
     )
 
+    ensure_unique_model(db, models.User, {"email": user_data.email})
+
     user: models.User = create_model(
-        db, 
-        models.User, 
-        user_to_create
+        db,
+        model_to_create=models.User,
+        create=user_to_create,
+        autocommit=autocommit
     )
     
     if can_login:
-        send_account_create_mail(str(user.email), unhashed_password, user.firstname)
+        send_account_create_mail(
+            str(user.email), 
+            user_to_create.password, 
+            user.firstname
+        )
+    
     return user
 
 

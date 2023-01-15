@@ -29,6 +29,7 @@ DATABASE_NAME = getenv("DATABASE_NAME")
 
 DATABASE_URL = f"postgres://{DATABASE_USERNAME}:{DATABASE_PASSWORD}@{DATABASE_SERVER_PRIVATE_ADDRESS}:{DATABASE_PORT}/{DATABASE_NAME}" # noqa E501
 
+# todo: the sizes should be set in config settings
 engine = create_engine(DATABASE_URL, pool_size=50, max_overflow=85) # type: ignore
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

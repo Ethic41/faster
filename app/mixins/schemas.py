@@ -6,18 +6,16 @@
 # @Description : Based on bills fastapi template
 
 
-from pydantic.fields import Field
-from pydantic.networks import EmailStr
-from app.utils.enums import ActionStatus, Gender
-from datetime import datetime
+from app.utils.enums import ActionStatus
+from datetime import datetime, date as dt_date
 from typing import Optional
 from pydantic import BaseModel
-
 
 
 class BaseSchemaMixin(BaseModel):
     id: int
     uuid: str
+    date: dt_date
     created_at: datetime
     last_modified: datetime
 
@@ -32,14 +30,4 @@ class BaseUACSchemaMixin(BaseSchemaMixin):
 
 class Status(BaseModel):
     status: ActionStatus
-
-
-class BaseSchemaMainMixin(BaseModel):
-    id: int
-    uuid: str
-    created_at: datetime
-    last_modified: datetime
-
-    class Config:
-        orm_mode = True
 
