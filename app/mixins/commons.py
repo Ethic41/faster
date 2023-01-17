@@ -82,9 +82,9 @@ class DateRange(BaseModel):
 
 class ListBase(BaseModel):
     count: int
-    sum_total: Optional[float] = Field(None)
+    sum: Optional[float] = Field(None)
 
-    _val_sum = currency_out_val("sum_total")
+    _val_sum = currency_out_val("sum")
 
 
 class TaxItemTypeMin(BaseSchemaMixin):

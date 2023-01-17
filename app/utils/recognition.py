@@ -6,7 +6,7 @@
 # @Description : something cool
 
 
-from app.utils.crud_util import list_model
+from app.utils.crud_util import CrudUtil
 from app.dependencies.dependencies import get_recognition_auth_token
 from fastapi import UploadFile
 from app.utils.misc import requester
@@ -99,7 +99,8 @@ def index_account_model(model_list: List[Any]) -> None:
 
 
 def re_index_model(db: Session, model: Any, model_name: str, count_col: str) -> None:
-    db_model_record = list_model(
+    cu = CrudUtil()
+    db_model_record = cu.list_model(
         db, 
         model_to_list=model,
         list_conditions={},
@@ -117,7 +118,7 @@ def re_index_model(db: Session, model: Any, model_name: str, count_col: str) -> 
     for i in range(1, rounds + 1):
         index_account_model(model_list)
 
-        db_model_record = list_model(
+        db_model_record = cu.list_model(
             db, 
             model_to_list=model,
             list_conditions={},

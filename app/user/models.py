@@ -1,7 +1,6 @@
 from typing import Any
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Table
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String, Table
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql.elements import False_
 
 from app.config.database import Base
 from app.mixins.columns import BaseMixin
@@ -25,9 +24,7 @@ class User(BaseMixin, Base):
     can_login = Column(Boolean, default=False, server_default="0", nullable=False)
 
     groups: Any = relationship("Group", secondary=user_group)
-    # user_account: relationship = relationship("UserAccount", back_populates="user")
-    # created_user_accounts: relationship = relationship("UserAccount", back_populates="creator")
-
+    
 
 class PasswordReset(BaseMixin, Base):
     email = Column(String(255), unique=True, nullable=False)

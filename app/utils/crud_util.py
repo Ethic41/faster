@@ -11,19 +11,26 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql.elements import and_
 from sqlalchemy.sql.functions import func
 from app.utils.enums import ActionStatus
+from app.dependencies.dependencies import get_db
 from typing import Any
 from pydantic.main import BaseModel
 
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.decl_api import DeclarativeMeta as SqlModel
-from fastapi import HTTPException
+from fastapi import Depends, HTTPException
 
 
 class CrudUtil:
+    
+    def __init__(
+        self, 
+        db: Session = Depends(get_db)
+    ):
+        self.db = db
+
 
     def create_model(
         self,
-        db: Session, 
         model_to_create: SqlModel,
         create: BaseModel,
         autocommit: bool = True
@@ -33,10 +40,10 @@ class CrudUtil:
 
             db_model = model_to_create(**create.dict())
             if not autocommit:
-                self.__add_no_commit(db, db_model)
+                self.__add_no_commit(db_model)
                 return db_model
             else:
-                self.__add_and_commit(db, db_model)
+                self.__add_and_commit(db_model)
                 return db_model
         
         except IntegrityError as e:
@@ -51,7 +58,6 @@ class CrudUtil:
 
     def get_model_or_404(
         self,
-        db: Session,
         model_to_get: SqlModel,
         model_conditions: dict[str, Any] = {},
         order_by_column: str = "id",
@@ -66,10 +72,10 @@ class CrudUtil:
                         model_conditions[field_name]))
             
             if order != "asc":
-                return db.query(model_to_get).filter(and_(*conditions)).\
+                return self.db.query(model_to_get).filter(and_(*conditions)).\
                     order_by(getattr(model_to_get, order_by_column).desc()).first()
             
-            return db.query(model_to_get).filter(and_(*conditions)).first()
+            return self.db.query(model_to_get).filter(and_(*conditions)).first()
         
         except AttributeError:
             raise HTTPException(
@@ -83,8 +89,7 @@ class CrudUtil:
 
 
     def update_model(
-        self,
-        db: Session, 
+        self, 
         model_to_update: SqlModel, 
         update: BaseModel,  
         update_conditions: dict[str, Any] = {},
@@ -92,7 +97,6 @@ class CrudUtil:
     )-> Any:
 
         db_model = self.get_model_or_404(
-            db,
             model_to_get=model_to_update,
             model_conditions=update_conditions
         )
@@ -100,10 +104,10 @@ class CrudUtil:
         try:
 
             if not autocommit:
-                self.__update_no_commit(db, db_model, update)
+                self.__update_no_commit(db_model, update)
                 return db_model
             else:
-                self.__update_and_commit(db, db_model, update)
+                self.__update_and_commit(db_model, update)
                 return db_model
         
         except Exception as e:
@@ -117,7 +121,6 @@ class CrudUtil:
 
     def list_model(
         self,
-        db: Session,
         model_to_list: SqlModel,
         list_conditions: dict[str, Any] = {},
         date_range: DateRange | None = None,
@@ -153,8 +156,7 @@ class CrudUtil:
                     date_range.to_date))
             
             if sum_by_column:
-                sum_total = self.get_model_sum(
-                    db, 
+                sum_total = self.get_model_sum( 
                     model_to_list, 
                     sum_by_column, 
                     model_conditions=list_conditions, 
@@ -166,8 +168,7 @@ class CrudUtil:
             
             try:
                 db_model_count = int(
-                    self.get_model_count(
-                        db, 
+                    self.get_model_count( 
                         model_to_list, 
                         count_by_column, 
                         list_conditions,
@@ -176,7 +177,7 @@ class CrudUtil:
                     )
                 )
 
-                querier = db.query(model_to_list)
+                querier = self.db.query(model_to_list)
                 for join_model in join_models:
                     querier = querier.join(join_model)
 
@@ -222,25 +223,23 @@ class CrudUtil:
 
 
     def delete_model(
-        self,
-        db: Session, 
+        self, 
         model_to_delete: SqlModel, 
         delete_conditions: dict[str, Any] = {},
         autocommit: bool = True,
     ) -> dict[str, ActionStatus]:
 
         db_model = self.get_model_or_404(
-            db,
             model_to_get=model_to_delete, 
             model_conditions=delete_conditions,
         )
         try:
 
             if autocommit:
-                self.__delete_and_commit(db, db_model)
+                self.__delete_and_commit(db_model)
                 return {"status": ActionStatus.success}
             else:
-                self.__delete_no_commit(db, db_model)
+                self.__delete_no_commit(db_model)
                 return {"status": ActionStatus.success}
             
         except Exception as e:
@@ -253,8 +252,7 @@ class CrudUtil:
 
 
     def ensure_unique_model(
-        self,
-        db: Session, 
+        self, 
         model_to_check: SqlModel, 
         unique_condition: dict[str, Any],
     ) -> None:
@@ -262,8 +260,7 @@ class CrudUtil:
         try:
 
             # try getting the model if it exists
-            db_model = self.get_model_or_404(
-                db, 
+            db_model = self.get_model_or_404( 
                 model_to_get=model_to_check, 
                 model_conditions=unique_condition
             )
@@ -284,7 +281,6 @@ class CrudUtil:
 
     def get_model_sum(
         self,
-        db: Session,
         model: SqlModel,
         column_to_sum: str,
         model_conditions: dict[str, Any] = {},
@@ -312,7 +308,7 @@ class CrudUtil:
                 conditions.append(and_(getattr(model, date_range.column_name)\
                     <= date_range.to_date))
             
-            querier = db.query(func.sum(getattr(model, column_to_sum)))
+            querier = self.db.query(func.sum(getattr(model, column_to_sum)))
             for join_model in join_models:
                 querier = querier.join(join_model)
 
@@ -344,7 +340,6 @@ class CrudUtil:
 
     def get_model_count(
         self,
-        db: Session,
         model_to_count: SqlModel,
         column_to_count_by: str,
         model_conditions: dict[str, Any] = {},
@@ -376,7 +371,9 @@ class CrudUtil:
                     .append(and_(getattr(model_to_count, date_range.column_name) <= \
                     date_range.to_date))
             
-            querier = db.query(func.count(getattr(model_to_count, column_to_count_by)))
+            querier = self.db.query(
+                func.count(getattr(model_to_count, column_to_count_by))
+            )
 
             for join_model in join_models:
                 querier = querier.join(join_model)
@@ -413,29 +410,26 @@ class CrudUtil:
 
 
     def __add_and_commit(
-        self,
-        db: Session, 
+        self, 
         model_to_add: SqlModel
     ) -> None:
 
-        db.add(model_to_add)
-        db.commit()
-        db.refresh(model_to_add)
+        self.db.add(model_to_add)
+        self.db.commit()
+        self.db.refresh(model_to_add)
 
 
     def __add_no_commit(
-        self,
-        db: Session, 
+        self, 
         model_to_add: SqlModel
     ) -> None:
 
-        db.add(model_to_add)
-        db.flush()
+        self.db.add(model_to_add)
+        self.db.flush()
 
 
     def __update_and_commit(
-        self,
-        db: Session, 
+        self, 
         model_to_update: SqlModel, 
         update: BaseModel
     ) -> None:
@@ -445,43 +439,43 @@ class CrudUtil:
         for key, value in update_dict.items():
             setattr(model_to_update, key, value)
         
-        db.commit()
-        db.refresh(model_to_update)
+        self.db.commit()
+        self.db.refresh(model_to_update)
 
 
     def __update_no_commit(
-        self,
-        db: Session, 
+        self, 
         model_to_update: SqlModel, 
         update: BaseModel
     ) -> None:
 
         update_dict = update.dict(exclude_unset=True)
+        columns: list[str] = model_to_update.__table__.c.keys()
 
         for key, value in update_dict.items():
-            setattr(model_to_update, key, value)
+            # if it's a valid column
+            if key in columns:
+                setattr(model_to_update, key, value)
         
-        db.flush()
+        self.db.flush()
 
 
     def __delete_and_commit(
-        self,
-        db: Session, 
+        self, 
         model_to_delete: SqlModel
     ) -> None:
 
-        db.delete(model_to_delete)
-        db.commit()
+        self.db.delete(model_to_delete)
+        self.db.commit()
 
 
     def __delete_no_commit(
-        self,
-        db: Session, 
+        self, 
         model_to_delete: SqlModel
     ) -> None:
 
-        db.delete(model_to_delete)
-        db.flush()
+        self.db.delete(model_to_delete)
+        self.db.flush()
 
 
 # todo: merge with count
