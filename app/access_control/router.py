@@ -1,10 +1,18 @@
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+#!/usr/bin/env python
+# -=-<[ Bismillahirrahmanirrahim ]>-=-
+# -*- coding: utf-8 -*-
+# @Date    : 2023-01-17 11:05:42
+# @Author  : Dahir Muhammad Dahir (dahirmuhammad3@gmail.com)
+# @Link    : link
+# @Version : 1.0.0
+
+
+from typing import Any
+from fastapi import APIRouter, Depends
 
 import app.dependencies.dependencies as deps
-from app.access_control import cruds, models, schemas
+from app.access_control import cruds, schemas
+from app.utils.crud_util import CrudUtil
 
 
 
@@ -26,217 +34,161 @@ groups_router = APIRouter(
 @perms_router.post(
     '',
     status_code=201,
-    dependencies=[Depends(deps.HasPermission(['can_create_permission']))]
+    dependencies=[Depends(deps.HasPermission(['permission:create']))]
 )
 async def create_permission(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
     perm_data: schemas.PermissionCreate,
-    dba: Session = Depends(deps.get_db)
 ) -> schemas.PermissionSchema:
 
-    return cruds.create_permission(db=dba, perm_data=perm_data)
+    return cruds.create_permission(cu=cu, perm_data=perm_data)
 
 
 @perms_router.get(
     '',
-    dependencies=[Depends(deps.HasPermission(['can_view_permission']))]
+    dependencies=[Depends(deps.HasPermission(['permission:list']))]
 )
 def list_permissions(
-    dba: Session = Depends(deps.get_db)
-) -> list[schemas.PermissionSchema]:
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    skip: int = 0,
+    limit: int = 100,
+) -> schemas.PermissionList:
 
-    return dba.query(models.Permission).all()
+    return cruds.list_permission(cu=cu, skip=skip, limit=limit)
 
 
 @perms_router.get(
     '/{perm_name}',
-    dependencies=[Depends(deps.HasPermission(['can_view_permission']))]
+    dependencies=[Depends(deps.HasPermission(['permission:read']))]
 )
 def permission_detail(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
     perm_name: str, 
-    dba: Session = Depends(deps.get_db)
 ) -> schemas.PermissionSchema:
 
-    permission = cruds.get_perm_by_name(name=perm_name, db=dba)
-    if not permission:
-        raise HTTPException(
-            status_code=404,
-            detail='Permission not found'
-        )
+    permission = cruds.get_perm_by_name(name=perm_name, cu=cu)
     return permission
 
 
 @perms_router.put(
     '/{perm_name}',
-    response_model=schemas.PermissionSchema,
-    dependencies=[Depends(deps.HasPermission(['can_modify_permission']))]
+    dependencies=[Depends(deps.HasPermission(['permission:update']))]
 )
 def update_permission(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
     perm_name: str,
     perm_data: schemas.PermissionUpdate,
-    dba: Session = Depends(deps.get_db)
-):
-    permission = cruds.get_perm_by_name(name=perm_name, db=dba)
-    if not permission:
-        raise HTTPException(
-            status_code=404,
-            detail='Permission not found'
-        )
-    perm_update_dict = perm_data.dict(exclude_unset=True)
-    if len(perm_update_dict) < 1:
-        raise HTTPException(
-            status_code=400,
-            detail='Invalid request'
-        )
-    for key, value in perm_update_dict.items():
-        setattr(permission, key, value)
-    dba.commit()
-    dba.refresh(permission)
-    return permission
+) -> schemas.PermissionSchema:
+
+    return cruds.update_permission(cu=cu, name=perm_name, update_data=perm_data)
 
 
 @perms_router.delete(
     '/{perm_name}',
-    dependencies=[Depends(deps.HasPermission(['can_delete_permission']))]
+    dependencies=[Depends(deps.HasPermission(['permission:delete']))]
 )
-def delete_permission(perm_name: str, dba: Session = Depends(deps.get_db)):
-    permission = cruds.get_perm_by_name(db=dba, name=perm_name)
-    if not permission:
-        raise HTTPException(
-            status_code=404,
-            detail='Permission not found'
-        )
-    dba.query(models.Permission). \
-        filter(models.Permission.name == perm_name). \
-        delete()
-    dba.commit()
-    return {'detail': 'Permission deleted successfully.'}
+def delete_permission(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    perm_name: str, 
+) -> dict[str, Any]:
+
+    return cruds.delete_permission(cu=cu, name=perm_name)
 
 
 # ================ Roles ================
 @roles_router.post(
     '',
     status_code=201,
-    response_model=schemas.RoleSchema,
-    dependencies=[Depends(deps.HasPermission(['can_create_role']))]
+    dependencies=[Depends(deps.HasPermission(['role:create']))]
 )
 def create_role(
     role_data: schemas.RoleCreate,
-    dba: Session = Depends(deps.get_db)
-):
-    try:
-        role = cruds.create_role(db=dba, role_data=role_data)
-    except IntegrityError as e:
-        raise HTTPException(
-            status_code=403,
-            detail='Duplicate role not allowed'
-        )
-    else:
-        return role
+    cu: CrudUtil = Depends(CrudUtil),
+) -> schemas.RoleSchema:
+    
+    return cruds.create_role(cu=cu, role_data=role_data)
 
 
 @roles_router.get(
     '',
-    response_model=List[schemas.RoleSchema],
-    dependencies=[Depends(deps.HasPermission(['can_view_role']))]
+    dependencies=[Depends(deps.HasPermission(['role:list']))]
 )
-def list_roles(dba: Session = Depends(deps.get_db)):
-    return dba.query(models.Role).all()
+def list_roles(
+    cu: CrudUtil = Depends(CrudUtil),
+    skip: int = 0,
+    limit: int = 100,
+) -> schemas.RoleList:
+
+    return cruds.list_role(cu=cu, skip=skip, limit=limit)
 
 
 @roles_router.get(
     '/{role_name}',
-    response_model=schemas.RoleSchema,
-    dependencies=[Depends(deps.HasPermission(['can_view_role']))]
+    dependencies=[Depends(deps.HasPermission(['role:read']))]
 )
-def role_detail(role_name: str, dba: Session = Depends(deps.get_db)):
-    role = cruds.get_role_by_name(name=role_name, db=dba)
-    if not role:
-        raise HTTPException(
-            status_code=404,
-            detail='Role not found'
-        )
-    return role
+def role_detail(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    role_name: str,
+) -> schemas.RoleSchema:
+
+    return cruds.get_role_by_name(cu=cu, name=role_name)
 
 
 @roles_router.put(
     '/{role_name}',
-    response_model=schemas.RoleSchema,
-    dependencies=[Depends(deps.HasPermission(['can_modify_role']))]
+    dependencies=[Depends(deps.HasPermission(['role:update']))]
 )
 def update_role(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
     role_name: str,
     role_data: schemas.RoleUpdate,
-    dba: Session = Depends(deps.get_db)
-):
-    role = cruds.get_role_by_name(name=role_name, db=dba)
-    if not role:
-        raise HTTPException(
-            status_code=404,
-            detail='Role not found'
-        )
-    role_dict = role_data.dict(exclude_unset=True)
-    try:
-        perms = role_dict.pop('permissions')
-    except KeyError:
-        pass
-    else:
-        for perm_name in perms:
-            perm = cruds.get_perm_by_name(name=perm_name, db=dba)
-            if perm:
-                role.permissions.append(perm)
+) -> schemas.RoleSchema:
 
-    for key, value in role_dict.items():
-        setattr(role, key, value)
-    dba.commit()
-    dba.refresh(role)
-    return role
+    return cruds.update_role(cu=cu, name=role_name, update_data=role_data)
 
 
 @roles_router.delete(
     '/{role_name}',
-    dependencies=[Depends(deps.HasPermission(['can_delete_role']))]
+    dependencies=[Depends(deps.HasPermission(['role:delete']))]
 )
-def delete_role(role_name: str, dba: Session = Depends(deps.get_db)):
-    role = cruds.get_role_by_name(db=dba, name=role_name)
-    if not role:
-        raise HTTPException(
-            status_code=404,
-            detail='Role not found'
-        )
-    dba.query(models.Role). \
-        filter(models.Role.name == role_name). \
-        delete()
-    dba.commit()
-    return {'detail': 'Role deleted successfully.'}
+def delete_role(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    role_name: str, 
+) -> dict[str, Any]:
+    
+    return cruds.delete_role(cu=cu, name=role_name)
 
 
 @roles_router.delete(
     '/{role_name}/permissions',
-    response_model=schemas.RoleSchema,
-    dependencies=[Depends(deps.HasPermission(['can_delete_role']))]
+    dependencies=[Depends(deps.HasPermission(['role:update']))]
 )
 def remove_permission_from_role(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
     role_name: str,
     perms_to_delete: schemas.RemoveRolePermission,
-    dba: Session = Depends(deps.get_db)
-):
-    role = cruds.get_role_by_name(db=dba, name=role_name)
-    if not role:
-        raise HTTPException(
-            status_code=404,
-            detail='Role not found'
-        )
-    perms = perms_to_delete.dict(exclude_unset=True)['permissions']
+) -> schemas.RoleSchema:
+    role = cruds.get_role_by_name(cu=cu, name=role_name)
+    perms = perms_to_delete.dict()['permissions']
     for perm_name in perms:
-        perm = cruds.get_perm_by_name(name=perm_name, db=dba)
+        perm = cruds.get_perm_by_name(cu=cu, name=perm_name)
         if perm:
             try:
                 role.permissions.remove(perm)
             except ValueError:
                 pass
 
-    dba.commit()
-    dba.refresh(role)
+    cu.db.commit()
+    cu.db.refresh(role)
     return role
 
 
@@ -244,125 +196,93 @@ def remove_permission_from_role(
 @groups_router.post(
     '',
     status_code=201,
-    response_model=schemas.GroupSchema,
-    dependencies=[Depends(deps.HasPermission(['can_create_group']))]
+    dependencies=[Depends(deps.HasPermission(['group:create']))]
 )
 def create_group(
+    *,
+    cu: CrudUtil = Depends(deps.get_db),
     group_data: schemas.GroupCreate,
-    dba: Session = Depends(deps.get_db)
-):
-    try:
-        group = cruds.create_group(db=dba, group_data=group_data)
-    except IntegrityError as e:
-        raise HTTPException(
-            status_code=403,
-            detail='Duplicate group not allowed'
-        )
-    else:
-        return group
+) -> schemas.GroupSchema:
+    
+    return cruds.create_group(cu=cu, group_data=group_data)
 
 
 @groups_router.get(
     '',
-    response_model=List[schemas.GroupSchema],
-    dependencies=[Depends(deps.HasPermission(['can_view_group']))]
+    dependencies=[Depends(deps.HasPermission(['group:read']))]
 )
-def list_groups(dba: Session = Depends(deps.get_db)):
-    return dba.query(models.Group).all()
+def list_groups(
+    cu: CrudUtil = Depends(CrudUtil),
+    skip: int = 0,
+    limit: int = 100,
+) -> schemas.GroupList:
+    return cruds.list_group(cu=cu, skip=skip, limit=limit)
 
 
 @groups_router.get(
     '/{group_name}',
-    response_model=schemas.GroupSchema,
-    dependencies=[Depends(deps.HasPermission(['can_view_group']))]
+    dependencies=[Depends(deps.HasPermission(['group:read']))]
 )
-def group_detail(group_name: str, dba: Session = Depends(deps.get_db)):
-    group = cruds.get_group_by_name(name=group_name, db=dba)
-    if not group:
-        raise HTTPException(
-            status_code=404,
-            detail='Group not found'
-        )
-    return group
+def group_detail(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    group_name: str,
+) -> schemas.GroupSchema:
+    
+    return cruds.get_group_by_name(cu=cu, name=group_name)
 
 
 @groups_router.put(
     '/{group_name}',
-    response_model=schemas.GroupSchema,
-    dependencies=[Depends(deps.HasPermission(['can_modify_group']))]
+    dependencies=[Depends(deps.HasPermission(['group:update']))]
 )
 def update_group(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
     group_name: str,
     group_data: schemas.GroupUpdate,
-    dba: Session = Depends(deps.get_db)
-):
-    group = cruds.get_group_by_name(name=group_name, db=dba)
-    if not group:
-        raise HTTPException(
-            status_code=404,
-            detail='Group not found'
-        )
-    group_dict = group_data.dict(exclude_unset=True)
-    try:
-        roles = group_dict.pop('roles')
-    except KeyError:
-        pass
-    else:
-        for role_name in roles:
-            role = cruds.get_role_by_name(name=role_name, db=dba)
-            if role:
-                group.roles.append(role)
+) -> schemas.GroupSchema:
 
-    for key, value in group_dict.items():
-        setattr(group, key, value)
-    dba.commit()
-    dba.refresh(group)
-    return group
+    return cruds.update_group(
+        cu=cu, 
+        name=group_name, 
+        update_data=group_data
+    )
 
 
 @groups_router.delete(
     '/{group_name}',
-    dependencies=[Depends(deps.HasPermission(['can_delete_group']))]
+    dependencies=[Depends(deps.HasPermission(['group:delete']))]
 )
-def delete_group(group_name: str, dba: Session = Depends(deps.get_db)):
-    group = cruds.get_group_by_name(db=dba, name=group_name)
-    if not group:
-        raise HTTPException(
-            status_code=404,
-            detail='Group not found'
-        )
-    dba.query(models.Group). \
-        filter(models.Group.name == group_name). \
-        delete()
-    dba.commit()
-    return {'detail': 'Group deleted successfully.'}
+def delete_group(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    group_name: str,
+) -> dict[str, Any]:
+    
+    return cruds.delete_group(cu=cu, name=group_name)
 
 
 @groups_router.delete(
     '/{group_name}/roles',
-    response_model=schemas.GroupSchema,
-    dependencies=[Depends(deps.HasPermission(['can_delete_group']))]
+    dependencies=[Depends(deps.HasPermission(['group:update']))]
 )
 def remove_role_from_group(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
     group_name: str,
     roles_to_delete: schemas.RemoveGroupRole,
-    dba: Session = Depends(deps.get_db)
-):
-    group = cruds.get_group_by_name(db=dba, name=group_name)
-    if not group:
-        raise HTTPException(
-            status_code=404,
-            detail='Role not found'
-        )
-    roles = roles_to_delete.dict(exclude_unset=True)['roles']
+) -> schemas.GroupSchema:
+    group = cruds.get_group_by_name(cu=cu, name=group_name)
+    roles = roles_to_delete.dict()['roles']
     for role_name in roles:
-        role = cruds.get_role_by_name(name=role_name, db=dba)
+        role = cruds.get_role_by_name(cu=cu, name=role_name)
         if role:
             try:
                 group.roles.remove(role)
             except ValueError:
                 pass
 
-    dba.commit()
-    dba.refresh(group)
+    cu.db.commit()
+    cu.db.refresh(group)
     return group

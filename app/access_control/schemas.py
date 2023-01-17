@@ -1,5 +1,14 @@
-from typing import List, Optional
+#!/usr/bin/env python
+# -=-<[ Bismillahirrahmanirrahim ]>-=-
+# -*- coding: utf-8 -*-
+# @Date    : 2023-01-17 10:51:44
+# @Author  : Dahir Muhammad Dahir (dahirmuhammad3@gmail.com)
+# @Link    : link
+# @Version : 1.0.0
+
+
 from pydantic import BaseModel
+from app.mixins.commons import ListBase
 
 from app.mixins.schemas import BaseUACSchemaMixin
 from app.utils.custom_validators import lowercased
@@ -8,14 +17,14 @@ from app.utils.custom_validators import lowercased
 
 class PermissionCreate(BaseModel):
     name: str
-    description: Optional[str]
+    description: str | None
 
     _val_name = lowercased("name")
 
 
 class PermissionUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
+    name: str | None = None
+    description: str | None = None
 
     _val_name = lowercased("name")
 
@@ -24,50 +33,62 @@ class PermissionSchema(BaseUACSchemaMixin):
     pass
 
 
+class PermissionList(ListBase):
+    model_list: list[PermissionSchema]
+
+
 class RoleCreate(BaseModel):
     name: str
-    description: Optional[str]
+    description: str | None
 
     _val_name = lowercased("name")
 
 
 class RoleUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    permissions: Optional[List[str]]
+    name: str | None = None
+    description: str | None = None
+    permissions: list[str] | None
 
     _val_name = lowercased("name")
 
 
 class RemoveRolePermission(BaseModel):
-    permissions: List[str]
+    permissions: list[str]
 
 
 class RoleSchema(BaseUACSchemaMixin):
-    permissions: List[PermissionSchema]
+    permissions: list[PermissionSchema]
+
+
+class RoleList(ListBase):
+    model_list: list[RoleSchema]
 
 
 class GroupCreate(BaseModel):
     name: str
-    description: Optional[str]
+    description: str | None
 
     _val_name = lowercased("name")
 
 
 class GroupUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    roles: Optional[List[str]]
+    name: str | None = None
+    description: str | None = None
+    roles: list[str] | None
 
     _val_name = lowercased("name")
 
 
 class RemoveGroupRole(BaseModel):
-    roles: List[str]
+    roles: list[str]
 
 
 class GroupSchema(BaseUACSchemaMixin):
-    roles: List[RoleSchema]
+    roles: list[RoleSchema]
+
+
+class GroupList(ListBase):
+    model_list: list[GroupSchema]
 
 
 class GroupOutSchema(BaseUACSchemaMixin):
