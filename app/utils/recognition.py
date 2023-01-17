@@ -10,7 +10,6 @@ from app.utils.crud_util import CrudUtil
 from app.dependencies.dependencies import get_recognition_auth_token
 from fastapi import UploadFile
 from app.utils.misc import requester
-from sqlalchemy.orm.session import Session
 
 from typing import Any, List
 from os import getenv
@@ -98,17 +97,20 @@ def index_account_model(model_list: List[Any]) -> None:
         index_face_to_collection(face_image_url, user_id)
 
 
-def re_index_model(db: Session, model: Any, model_name: str, count_col: str) -> None:
-    cu = CrudUtil()
+def re_index_model(
+    cu: CrudUtil, 
+    model: Any,  
+    count_col: str
+) -> None:
+
     db_model_record = cu.list_model(
-        db, 
         model_to_list=model,
         list_conditions={},
         count_by_column=count_col
     )
 
     count = int(db_model_record["count"])
-    model_list: List[Any] = db_model_record["model_list"]
+    model_list: list[Any] = db_model_record["model_list"]
 
     if count % 100:
         rounds = (count // 100) + 1
@@ -119,7 +121,6 @@ def re_index_model(db: Session, model: Any, model_name: str, count_col: str) -> 
         index_account_model(model_list)
 
         db_model_record = cu.list_model(
-            db, 
             model_to_list=model,
             list_conditions={},
             skip= i * 100,

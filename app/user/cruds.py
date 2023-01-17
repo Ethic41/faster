@@ -4,28 +4,31 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, BackgroundTasks
 
 from app.user import schemas, models
+from app.utils.crud_util import CrudUtil
 from app.utils.mail import send_change_password_mail, send_account_create_mail
 from app.utils.misc import gen_random_password
 from app.utils.user import get_password_hash, verify_password
-from app.utils.crud_util import create_model, list_model, ensure_unique_model
 
 
 def create_user(
-    db: Session,
+    cu: CrudUtil,
     user_data: schemas.UserIn,
     autocommit: bool = True,
     can_login: bool = False
 ) -> models.User:
+
     user_to_create = schemas.UserCreate(
         **user_data.dict(),
         password_hash="",
         can_login=can_login,
     )
 
-    ensure_unique_model(db, models.User, {"email": user_data.email})
+    cu.ensure_unique_model(
+        model_to_check=models.User, 
+        unique_condition={"email": user_data.email}
+    )
 
-    user: models.User = create_model(
-        db,
+    user: models.User = cu.create_model(
         model_to_create=models.User,
         create=user_to_create,
         autocommit=autocommit
@@ -41,33 +44,31 @@ def create_user(
     return user
 
 
-def get_user_by_email(db: Session, email: EmailStr):
-    return db.query(models.User).filter(models.User.email == email).first()
+def get_user_by_email(
+    cu: CrudUtil, 
+    email: EmailStr
+) -> models.User:
+    user: models.User = cu.get_model_or_404(
+        model_to_get=models.User,
+        model_conditions={"email": email}
+    )
+
+    return user
 
 
-def check_user_exist(db: Session, email: EmailStr):
-    db_user = get_user_by_email(db=db, email=email)
-    if db_user:
-        raise HTTPException(403, detail="User already exists")
-
-
-def get_user_by_uuid(db: Session, uuid: str):
-    return db.query(models.User).filter(models.User.uuid == str(uuid)).first()
-
-
-def get_password_reset_by_uuid(db: Session, uuid: str):
-    return db.query(models.PasswordReset). \
-        filter(models.PasswordReset.uuid == uuid). \
-        first()
-
-
-def authenticate_user(email: EmailStr, password: str, dba: Session):
-    user = get_user_by_email(db=dba, email=email)
-    if not user:
-        raise HTTPException(
-            status_code=400,
-            detail='Email and password do not match'
-        )
+def authenticate_user(
+    cu: CrudUtil,
+    email: EmailStr, 
+    password: str, 
+):
+    try:
+        user: models.User = get_user_by_email(cu, email)
+    except HTTPException as e:
+        if e.status_code == 404:
+            raise HTTPException(
+                status_code=400,
+                detail='Email and password do not match'
+            )
     
     if not user.is_active:
         raise HTTPException(

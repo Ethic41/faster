@@ -9,20 +9,18 @@
 from fastapi.param_functions import Path
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
-from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timedelta, timezone
 from pydantic import EmailStr
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
-from typing import List
-import ulid
 import os
 
 from app.access_control.cruds import get_group_by_name
 from app.dependencies import dependencies as deps
 from app.user import cruds, schemas, models
-from app.utils.user import get_password_hash, verify_password, create_access_token
+from app.utils.crud_util import CrudUtil
+from app.utils.user import get_password_hash, create_access_token
 from app.utils.mail import send_dummy_mail
 
 load_dotenv()
@@ -40,14 +38,15 @@ auth_router = APIRouter(
 
 
 @auth_router.post(
-    '/docs-token', response_model=schemas.Token, include_in_schema=False
+    '/docs-token', 
+    include_in_schema=False
 )
 def docs_authentication(
     form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(deps.get_db)
-):
+    cu: CrudUtil = Depends(CrudUtil)
+) -> schemas.Token:
     user = cruds.authenticate_user(
-        dba=db,
+        cu=cu,
         email=EmailStr(form_data.username),
         password=form_data.password
     )
