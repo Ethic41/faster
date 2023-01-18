@@ -34,8 +34,8 @@ auth_router = APIRouter(
 
 
 @auth_router.post(
-    '/docs-token', 
-    include_in_schema=False
+    '/docs-token',
+    include_in_schema=False,
 )
 def docs_authentication(
     cu: CrudUtil = Depends(CrudUtil),
