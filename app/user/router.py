@@ -9,21 +9,15 @@
 from typing import Any
 from fastapi.param_functions import Path
 from fastapi.security import OAuth2PasswordRequestForm
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
-from sqlalchemy.exc import IntegrityError
-from datetime import datetime, timedelta, timezone
+from fastapi import APIRouter, Depends, BackgroundTasks
 from pydantic import EmailStr
-from sqlalchemy.orm import Session
 from dotenv import load_dotenv
-import os
 
 from app.access_control.cruds import get_group_by_name
 from app.dependencies import dependencies as deps
-from app.user import cruds, schemas, models
+from app.user import cruds, schemas
 from app.utils.crud_util import CrudUtil
-from app.utils.misc import gen_random_password
-from app.utils.user import get_password_hash, create_access_token
-from app.utils.mail import send_dummy_mail
+from app.utils.user import create_access_token
 
 load_dotenv()
 
@@ -146,53 +140,36 @@ def list_admin_users(
     filter: schemas.AdminUserFilter = Depends(),
     skip: int = 0,
     limit: int = 100
-):
+) -> schemas.UserList:
+
     return cruds.list_admin_users(cu, filter, skip=skip, limit=limit)
 
 
 @users_router.get(
-    '/{uuid}', 
-    response_model=schemas.UserSchema,
-    dependencies=[Depends(deps.HasPermission(["can_view_system_user_details"]))]
+    '/{uuid}',
+    dependencies=[Depends(deps.HasPermission(["admin:read"]))]
 )
-def user_detail(uuid: str, dba: Session = Depends(deps.get_db)):
-    user = cruds.get_user_by_uuid(uuid=uuid, db=dba)
-    if not user:
-        raise HTTPException(
-            status_code=404,
-            detail='User not found'
-        )
-    return user
+def get_admin_detail(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    uuid: str,
+) -> schemas.UserSchema:
+
+    return cruds.get_user_by_uuid(cu, uuid)
 
 
 @users_router.put(
     '/{uuid}', 
-    response_model=schemas.UserSchema,
-    dependencies=[Depends(deps.HasPermission(["can_update_system_user"]))]
+    dependencies=[Depends(deps.HasPermission(["admin:update"]))]
 )
-def update_user(
+def update_admin(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
     uuid: str,
     user_data: schemas.UserUpdate,
-    dba: Session = Depends(deps.get_db)
-):
-    user = cruds.get_user_by_uuid(uuid=uuid, db=dba)
-    if not user:
-        raise HTTPException(
-            status_code=404,
-            detail='User not found'
-        )
-    user_update_dict = user_data.dict(exclude_unset=True)
-    if len(user_update_dict) < 1:
-        raise HTTPException(
-            status_code=400,
-            detail='Invalid request'
-        )
-
-    for key, value in user_update_dict.items():
-        setattr(user, key, value)
-    dba.commit()
-    dba.refresh(user)
-    return user
+) -> schemas.UserSchema:
+    
+    return cruds.update_user(cu, uuid, user_data)
 
 
 @users_router.put(
@@ -211,97 +188,59 @@ def change_admin_password(
 
 @users_router.delete(
     '/{uuid}',
-    dependencies=[Depends(deps.HasPermission(["can_delete_system_user"]))]
+    dependencies=[Depends(deps.HasPermission(["admin:delete"]))]
 )
-def delete_user(uuid: str, dba: Session = Depends(deps.get_db)):
-    user = cruds.get_user_by_uuid(db=dba, uuid=uuid)
-    if not user:
-        raise HTTPException(
-            status_code=404,
-            detail='User not found'
-        )
-    dba.query(models.User). \
-        filter(models.User.uuid == uuid). \
-        delete()
-    dba.commit()
-    return {'detail': 'User deleted successfully.'}
+def delete_admin(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    uuid: str,
+) -> dict[str, Any]:
+    
+    return cruds.delete_user(cu, uuid)
 
 
 @users_router.post(
     '/{uuid}/groups',
-    response_model=schemas.UserSchema,
-    dependencies=[Depends(deps.HasPermission(["can_change_system_user_group"]))]
+    dependencies=[Depends(deps.HasPermission(["admin:update"]))]
 )
 def add_group_to_user(
-    uuid: str, groups: schemas.UserGroup, dba: Session = Depends(deps.get_db)
-):
-    user = cruds.get_user_by_uuid(db=dba, uuid=uuid)
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    uuid: str, 
+    groups: schemas.UserGroup, 
+) -> schemas.UserSchema:
+
+    user = cruds.get_user_by_uuid(cu, uuid)
     group_list = groups.dict().pop('groups')
-    if not user:
-        raise HTTPException(
-            status_code=404,
-            detail='User not found'
-        )
+    
     for group_name in group_list:
-        group = get_group_by_name(name=group_name, db=dba)
-        if not group:
-            raise HTTPException(
-                status_code=404,
-                detail=f'{group_name} is not found'
-            )
+        group = get_group_by_name(cu, name=group_name)
         user.groups.append(group)
-    dba.commit()
-    dba.refresh(user)
+
+    cu.db.commit()
+    cu.db.refresh(user)
     return user
 
 
 @users_router.delete(
     '/{uuid}/groups',
-    response_model=schemas.UserSchema,
-    dependencies=[Depends(deps.HasPermission(["can_change_system_user_group"]))]
+    dependencies=[Depends(deps.HasPermission(["admin:update"]))]
 )
 def remove_group_from_user(
-    uuid: str, groups: schemas.UserGroup, dba: Session = Depends(deps.get_db)
-):
-    user = cruds.get_user_by_uuid(db=dba, uuid=uuid)
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    uuid: str,
+    groups: schemas.UserGroup,
+) -> schemas.UserSchema:
+
+    user = cruds.get_user_by_uuid(cu, uuid=uuid)
     group_list = groups.dict().pop('groups')
-    if not user:
-        raise HTTPException(
-            status_code=404,
-            detail='User not found'
-        )
+    
     for group_name in group_list:
-        group = get_group_by_name(name=group_name, db=dba)
-        if not group:
-            raise HTTPException(
-                status_code=404,
-                detail=f'{group_name} is not found'
-            )
+        group = get_group_by_name(cu, group_name)
         user.groups.remove(group)
-    dba.commit()
-    dba.refresh(user)
+    
+    cu.db.commit()
+    cu.db.refresh(user)
     return user
 
-
-# @users_router.post('/{uuid}/password')
-# def change_user_password(
-#     uuid: str,
-#     passwords: schemas.ChagePasswordFromDashboard,
-#     dba: Session = Depends(deps.get_db)
-# ):
-#     user = cruds.get_user_by_uuid(db=dba, uuid=uuid)
-#     if not user:
-#         raise HTTPException(
-#             status_code=404,
-#             detail='User not found'
-#         )
-#     if not verify_password(passwords.current_password, user.password_hash):
-#         raise HTTPException(
-#             status_code=403,
-#             detail='Current password is incorrect'
-#         )
-#     new_password_hash = get_password_hash(passwords.new_password)
-#     user.password_hash = new_password_hash
-#     dba.commit()
-#     dba.refresh(user)
-#     return {'detail': 'Password changed successfully.'}

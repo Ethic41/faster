@@ -63,6 +63,44 @@ def get_user_by_email(
     return user
 
 
+def get_user_by_uuid(
+    cu: CrudUtil,
+    uuid: str,
+) -> models.User:
+
+    user: models.User = cu.get_model_or_404(
+        model_to_get=models.User,
+        model_conditions={"uuid": uuid}
+    )
+    return user
+
+
+def update_user(
+    cu: CrudUtil,
+    uuid: str,
+    user_data: schemas.UserUpdate,
+) -> models.User:
+    
+    user: models.User = cu.update_model(
+        model_to_update=models.User,
+        update=user_data,
+        update_conditions={"uuid": uuid},
+    )
+
+    return user
+
+
+def delete_user(
+    cu: CrudUtil, 
+    uuid: str
+) -> dict[str, Any]:
+
+    return cu.delete_model(
+        model_to_delete=models.User,
+        delete_conditions={"uuid": uuid}
+    )
+
+
 def authenticate_user(
     cu: CrudUtil,
     email: EmailStr, 

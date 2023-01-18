@@ -10,13 +10,13 @@ from datetime import timedelta
 from typing import Any, Generator
 from jose import jwt
 from fastapi import Depends, HTTPException
-from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordBearer
 from dotenv import load_dotenv
 from os import getenv
 
 from app.config import database as db
 from app.user import cruds as users_cruds, schemas as users_schema
+from app.utils.crud_util import CrudUtil
 from app.utils.timing import get_current_datetime
 
 
@@ -39,12 +39,12 @@ def get_db() -> Generator[Any, Any, Any]:
 
 def get_current_user(
     token: str = Depends(oauth2_scheme), 
-    cu: Session = Depends(get_db)
+    cu: CrudUtil = Depends(CrudUtil)
 ) -> users_schema.UserSchema:
 
     payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     user = users_schema.UserSchema.from_orm(
-        users_cruds.get_user_by_email(db=db, email=payload['data']['email'])
+        users_cruds.get_user_by_email(cu, payload['data']['email'])
     )
     return user
 
