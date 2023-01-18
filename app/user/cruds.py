@@ -60,7 +60,7 @@ def authenticate_user(
     cu: CrudUtil,
     email: EmailStr, 
     password: str, 
-):
+) -> schemas.UserSchema:
     try:
         user: models.User = get_user_by_email(cu, email)
     except HTTPException as e:
@@ -69,6 +69,8 @@ def authenticate_user(
                 status_code=400,
                 detail='Email and password do not match'
             )
+        
+        raise e
     
     if not user.is_active:
         raise HTTPException(
@@ -81,6 +83,7 @@ def authenticate_user(
             status_code=400,
             detail='Email and password do not match'
         )
+    
     return schemas.UserSchema.from_orm(user) 
 
 

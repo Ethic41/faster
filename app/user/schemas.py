@@ -114,7 +114,7 @@ class PasswordChangeOut(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
-    permissions: Optional[List[str]] = Field(None)
+    permissions: list[str] | None = Field(None)
 
 
 class Login(BaseModel):
