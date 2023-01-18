@@ -6,6 +6,7 @@
 # @Description : something cool
 
 
+from typing import Any
 from fastapi.param_functions import Path
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
@@ -105,110 +106,48 @@ def request_password_reset(
     *,
     cu: CrudUtil = Depends(CrudUtil),
     email: EmailStr,
-):
-    sent_email = (
-        "We've sent a new password to your email"
-    )
-
-    try:
-        user = cruds.get_user_by_email(cu, email)
-        new_password = gen_random_password()
-        new_password_hash = get_password_hash(new_password)
-        user.password_hash = new_password_hash
-        cu.db.commit()
-        # todo: send the email
-        return {'detail': sent_email}
-        
-    except HTTPException as e:
-        if e.status_code == 404:
-            return {'detail': sent_email}
-        
-
-    # PASSWORD_RESET_EXPIRES = int(os.getenv('PASSWORD_RESET_EXPIRES', ""))
-    # expires = datetime.now(timezone(timedelta(hours=1))) + timedelta(hours=PASSWORD_RESET_EXPIRES)
-    # request = models.PasswordReset(email=email, expires=expires)
-    # dba.add(request)
-    # try:
-    #     dba.commit()
-    # except IntegrityError:
-    #     dba.rollback()
-    #     dba.query(models.PasswordReset). \
-    #         filter(models.PasswordReset.email == email). \
-    #         delete()
-    #     dba.add(request)
-    #     dba.commit()
-    # message = (
-    #     'Hi,\n\n'
-    #     'you are receiving this email because we received a password\n'
-    #     'reset request for your account. Use this token for your password\n'
-    #     f'reset: {str(request.uuid)}.\n\n'
-    #     'If you did not request a password reset, no further action is required.'
-    # )
-    # send_dummy_mail(subject="Reset Your Password", message=message, to=EmailStr(request.email))
-    # return {"detail": sent_email}
+) -> dict[str, Any]:
+    
+    return cruds.request_password_reset(cu, email)
 
 
-@auth_router.post('/reset-password/{reset_uuid}')
+@auth_router.post(
+    '/reset-password/{reset_token}'
+)
 def reset_password(
-    reset_uuid: str,
-    reset_data: schemas.ResetPassword,
-    dba: Session = Depends(deps.get_db)
-):
-    invalid_or_expired = (
-        "The password reset link is invalid, possibly because it "
-        "has already been used or it has expired. Please request a "
-        "new password reset."
-    )
-    now = datetime.now(timezone(timedelta(hours=1)))
-    reset_request = cruds.get_password_reset_by_uuid( db=dba, uuid=reset_uuid)
-    if not reset_request:
-        return {"detail": invalid_or_expired}
-    if now > reset_request.expires:
-        dba.query(models.PasswordReset). \
-            filter(models.PasswordReset.uuid == reset_uuid). \
-            delete()
-        dba.commit()
-        return {"detail": invalid_or_expired}
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
+    reset_token: str,
+) -> dict[str, Any]:
 
-    new_hashed_password = get_password_hash(reset_data.password)
-    user = cruds.get_user_by_email(db=dba, email=reset_request.email)
-    user.password_hash = new_hashed_password
-    dba.delete(reset_request)
-    dba.commit()
-    return {'detail': 'Password changed successfully.'}
+    return cruds.reset_password(cu, reset_token)
 
 
 @users_router.post('',
     status_code=201,
-    response_model=schemas.UserSchema,
-    dependencies=[Depends(deps.HasPermission(["can_create_system_user"]))]
+    dependencies=[Depends(deps.HasPermission(["admin:create"]))]
 )
-def create_system_user(
+def create_admin_user(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
     user_data: schemas.UserIn,
-    dba: Session = Depends(deps.get_db)
-):
-    try:
-        user = cruds.create_user(db=dba, user_data=user_data, can_login=True)
-    except IntegrityError:
-        raise HTTPException(
-            status_code=403,
-            detail='This email is already in use'
-        )
-    return user
+) -> schemas.UserSchema:
+    
+    return cruds.create_user(cu, user_data, is_admin=True)
 
 
 @users_router.get(
     '', 
     response_model=schemas.UserList,
-    dependencies=[Depends(deps.HasPermission(["can_list_system_users"]))]
+    dependencies=[Depends(deps.HasPermission(["admin:list"]))]
 )
-def list_system_users(
-    db: Session = Depends(deps.get_db),
-    filter: schemas.SystemUserFilter = Depends(),
+def list_admin_users(
+    cu: CrudUtil = Depends(CrudUtil),
+    filter: schemas.AdminUserFilter = Depends(),
     skip: int = 0,
     limit: int = 100
 ):
-    return cruds.list_system_users(db, filter, skip=skip, limit=limit)
+    return cruds.list_admin_users(cu, filter, skip=skip, limit=limit)
 
 
 @users_router.get(
@@ -258,15 +197,16 @@ def update_user(
 
 @users_router.put(
     "/change_password/{user_uuid}",
-    response_model=schemas.PasswordChangeOut,
-    dependencies=[Depends(deps.HasPermission(["can_change_system_user_password"]))]
+    dependencies=[Depends(deps.HasPermission(["admin:update"]))]
 )
-def change_system_user_password(
+def change_admin_password(
+    *,
+    cu: CrudUtil = Depends(CrudUtil),
     bg_task: BackgroundTasks,
-    db: Session = Depends(deps.get_db),
     user_uuid: str = Path(...),
-):
-    return cruds.change_system_user_password(db, user_uuid, bg_task)
+) -> schemas.PasswordChangeOut:
+
+    return cruds.change_admin_password(cu, user_uuid, bg_task)
 
 
 @users_router.delete(

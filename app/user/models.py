@@ -21,7 +21,7 @@ class User(BaseMixin, Base):
     middlename = Column(String(255))
     phone = Column(String(50))
     is_active =  Column(Boolean, default=True)
-    can_login = Column(Boolean, default=False, server_default="0", nullable=False)
+    is_admin = Column(Boolean, default=False, server_default="0", nullable=False)
 
     groups: Any = relationship("Group", secondary=user_group)
     

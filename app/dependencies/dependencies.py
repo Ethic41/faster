@@ -39,7 +39,7 @@ def get_db() -> Generator[Any, Any, Any]:
 
 def get_current_user(
     token: str = Depends(oauth2_scheme), 
-    db: Session = Depends(get_db)
+    cu: Session = Depends(get_db)
 ) -> users_schema.UserSchema:
 
     payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])

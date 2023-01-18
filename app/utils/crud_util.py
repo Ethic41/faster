@@ -11,13 +11,21 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql.elements import and_
 from sqlalchemy.sql.functions import func
 from app.utils.enums import ActionStatus
-from app.dependencies.dependencies import get_db
-from typing import Any
+from app.config import database as db
+from typing import Any, Generator
 from pydantic.main import BaseModel
 
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.decl_api import DeclarativeMeta as SqlModel
 from fastapi import Depends, HTTPException
+
+
+def get_db() -> Generator[Any, Any, Any]:
+    dbase = db.SessionLocal()
+    try:
+        yield dbase
+    finally:
+        dbase.close()
 
 
 class CrudUtil:

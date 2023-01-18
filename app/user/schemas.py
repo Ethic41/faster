@@ -23,7 +23,7 @@ class UserCreate(BaseModel):
     firstname: str
     lastname: str
     middlename: Optional[str]
-    can_login: bool
+    is_admin: bool
 
     @validator("password")
     def _gen_password(cls, val: str) -> str:
@@ -46,17 +46,16 @@ class UserUpdate(BaseModel):
     is_active: Optional[bool] = Field(None)
 
 
-class SystemUserFilter(BaseModel):
+class AdminUserFilter(BaseModel):
     email: Optional[EmailStr] = Field(None)
     firstname: Optional[str] = Field(None)
     lastname: Optional[str] = Field(None)
     middlename: Optional[str] = Field(None)
     user_group_name: Optional[str] = Field(None)
     is_active: Optional[bool] = Field(None)
-    has_wallet: Optional[bool] = Field(None)
 
 
-class ChagePasswordFromDashboard(BaseModel):
+class ChangePasswordFromDashboard(BaseModel):
     current_password: str
     new_password: str
 
@@ -67,7 +66,7 @@ class UserSchema(BaseSchemaMixin):
     lastname: str
     middlename: Optional[str] = ''
     is_active: bool
-    is_system_user: bool
+    is_admin: bool
     groups: List[GroupSchema]
 
     @property
@@ -82,9 +81,6 @@ class UserSchema(BaseSchemaMixin):
     def has_permission(self, permission: str) -> bool:
         return permission in self.permissions
 
-    class Config:
-        orm_mode = True
-
 
 class UserOut(BaseSchemaMixin):
     email: EmailStr
@@ -92,15 +88,12 @@ class UserOut(BaseSchemaMixin):
     lastname: str
     middlename: Optional[str] = ''
     is_active: bool
-    is_system_user: bool
+    is_admin: bool
     groups: List[GroupOutSchema]
-
-    class Config:
-        orm_mode = True
 
 
 class UserList(ListBase):
-    result: List[UserOut]
+    model_list: list[UserOut]
 
 
 class ResetPassword(BaseModel):
