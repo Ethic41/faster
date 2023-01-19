@@ -36,6 +36,13 @@ class Settings(BaseSettings):
     database_max_overflow: int = 85
 
     # jwt settings
+    jwt_secret_key: str
+    jwt_algorithm: str
+    token_life_span: int
+    token_long_life_span: int
+
+    # url
+    token_url: str
 
     @validator("database_url")
     def _val_db_url(cls, v: str, values: dict[str, Any]) -> str:
