@@ -1,9 +1,9 @@
-from os import getenv
 from typing import Any
 from pydantic import EmailStr
 from fastapi import HTTPException, BackgroundTasks
 from jose import JWSError, jws
 
+from app.config.config import settings
 from app.user import schemas, models
 from app.utils.crud_util import CrudUtil
 from app.utils.mail import (
@@ -143,10 +143,12 @@ def request_password_reset(
     try:
         user = get_user_by_email(cu, email)
         signed_token = jws.sign(
-            str(user.email).encode(), getenv("JWT_SECRET_KEY"), algorithm="HS256"
+            str(user.email).encode(), 
+            settings.jwt_secret_key, 
+            algorithm=settings.jwt_algorithm
         )
 
-        reset_link = f"{getenv('FRONTEND_URL')}/reset-password/{signed_token}"
+        reset_link = f"{settings.frontend_url}/reset-password/{signed_token}"
         send_password_reset_link_mail(str(user.email), reset_link)
         return {'detail': sent_email}
         
@@ -160,7 +162,11 @@ def reset_password(
 ) -> dict[str, Any]:
 
     try:
-        token_data = jws.verify(token, getenv("JWT_SECRET_KEY"), algorithms=["HS256"])
+        token_data = jws.verify(
+            token, 
+            settings.jwt_secret_key, 
+            algorithms=[settings.jwt_algorithm]
+        )
         user = get_user_by_email(cu, token_data.decode())
         new_password = gen_random_password()
         new_password_hash = get_password_hash(new_password)
