@@ -45,6 +45,14 @@ class Settings(BaseSettings):
     token_url: str
     frontend_url: str
 
+    # email
+    source_email: str
+    sendgrid_api_key: str
+
+    # cloud
+    cloud_bucket_name: str
+    cloud_storage_url: str
+
     @validator("database_url")
     def _val_db_url(cls, v: str, values: dict[str, Any]) -> str:
 
