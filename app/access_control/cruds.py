@@ -129,12 +129,7 @@ def update_role(
     return role
 
 
-def list_role(
-    cu: CrudUtil,
-    skip: int,
-    limit: int,
-) -> schemas.RoleList:
-    
+def list_role(cu: CrudUtil, skip: int, limit: int) -> schemas.RoleList:
     roles: dict[str, Any] = cu.list_model(
         model_to_list=models.Role,
         skip=skip,
@@ -144,20 +139,14 @@ def list_role(
     return schemas.RoleList(**roles)
 
 
-def delete_role(
-    cu: CrudUtil,
-    name: str,
-) -> dict[str, Any]:
+def delete_role(cu: CrudUtil, name: str) -> dict[str, Any]:
     return cu.delete_model(
         model_to_delete=models.Role,
         delete_conditions={"name": name}
     )
 
 
-def create_group(
-    cu: CrudUtil, 
-    group_data: schemas.GroupCreate
-) -> models.Group:
+def create_group(cu: CrudUtil, group_data: schemas.GroupCreate) -> models.Group:
 
     cu.ensure_unique_model(
         model_to_check=models.Group, 
@@ -172,11 +161,7 @@ def create_group(
     return group
 
 
-def get_group_by_name(
-    cu: CrudUtil, 
-    name: str,
-) -> models.Group:
-
+def get_group_by_name(cu: CrudUtil, name: str) -> models.Group:
     group: models.Group = cu.get_model_or_404(
         model_to_get=models.Group,
         model_conditions={"name": name}
