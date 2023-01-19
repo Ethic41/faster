@@ -10,12 +10,12 @@ import io
 from typing import Any
 import ulid
 
+from app.config.config import settings
 from app.utils.misc import requester
 from fastapi.datastructures import UploadFile
 import qrcode
 from io import BytesIO
 from qrcode import constants
-from os import getenv
 from google.cloud import storage
 from PIL import Image, ImageDraw, ImageFont
 
@@ -24,7 +24,7 @@ def create_frontend_qr_data(
     unique_data: str, 
     frontend_var_name: str = ""
 ) -> str:
-    frontend_qr_url = getenv(frontend_var_name, "")
+    frontend_qr_url = settings.frontend_url
     return f"{frontend_qr_url}{unique_data}"
 
 
@@ -96,7 +96,7 @@ def create_and_upload_qr_cloud(
         qr_image = add_qr_display_text(qr_image, qr_display_text)
     
     in_memory_image = generate_in_memory_file(qr_image)
-    bucket_name = getenv(cloud_bucket_var_name, "")
+    bucket_name = settings.cloud_bucket_name
     return upload_file_to_cloud(in_memory_image, qr_filename, bucket_name)
 
 
@@ -122,10 +122,10 @@ def upload_image_to_cloud(
     file_name: str
 ) -> str:
     in_memory_image = generate_in_memory_file(image)
-    bucket_name = getenv(cloud_bucket_var_name, "")
+    bucket_name = settings.cloud_bucket_name
 
     if upload_file_to_cloud(in_memory_image, file_name, bucket_name):
-        return f"{getenv('CLOUD_STORAGE_PATH')}{bucket_name}/{file_name}"
+        return f"{settings.cloud_storage_url}{bucket_name}/{file_name}"
     
     raise Exception("Unable to upload image to cloud")
 

@@ -6,9 +6,10 @@
 # @Description : something cool
 
 
-import os
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
+
+from app.config.config import settings
 
 
 def send_change_password_mail(
@@ -17,7 +18,7 @@ def send_change_password_mail(
 ) -> None:
     email_body = password_change_template
     email_body = email_body.replace('somepassword', new_password)
-    email_body = email_body.replace('someappdomain', os.getenv('DOMAIN', ''))
+    email_body = email_body.replace('someappdomain', settings.frontend_url)
     send_mail(destination, 'Password Change Notification', email_body)
 
 
@@ -27,7 +28,7 @@ def send_password_reset_link_mail(
 ) -> None:
     email_body = password_reset_template
     email_body = email_body.replace('somelink', link)
-    email_body = email_body.replace('someappdomain', os.getenv('DOMAIN', ''))
+    email_body = email_body.replace('someappdomain', settings.frontend_url)
     send_mail(destination, 'Password Reset Link', email_body)
 
 
@@ -40,19 +41,19 @@ def send_account_create_mail(
     email_body = account_create_template
     email_body = email_body.replace('somepassword', new_password)
     email_body = email_body.replace('someuser', username)
-    email_body = email_body.replace('someappdomain', os.getenv('DOMAIN', ''))
+    email_body = email_body.replace('someappdomain', settings.frontend_url)
     send_mail(destination, 'Account Creation Notification', email_body)
 
 
 def send_mail(destination: str, subject: str, message: str) -> None:
     mail = Mail(
-        from_email=os.getenv('SOURCE_MAIL', ''),
+        from_email=settings.source_email,
         to_emails=destination,
         subject=subject,
         html_content=message
     )
     try:
-        sg = SendGridAPIClient(os.getenv('SENDGRID_API_KEY'))
+        sg = SendGridAPIClient(settings.sendgrid_api_key)
         sg.send(mail)
     except Exception as e:
         print(e)

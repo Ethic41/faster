@@ -11,17 +11,11 @@ from typing import Any
 
 from jose import jwt
 from passlib.context import CryptContext
-import os
 
+from app.config.config import settings
 
 # Password hash context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-
-# JWT config
-ALGORITHM = os.getenv("JWT_ALGORITHM")
-SECRET_KEY = os.getenv('JWT_SECRET_KEY')
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv('TOKEN_LIFE_SPAN', default=""))
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -37,7 +31,11 @@ def get_password_hash(password: str) -> str:
 def create_access_token(data: dict[str, Any]) -> str:
     to_encode = data.copy()
     expire = datetime.now(timezone(timedelta(hours=1))) + \
-        timedelta(hours=ACCESS_TOKEN_EXPIRE_MINUTES)
+        timedelta(hours=settings.token_life_span)
     to_encode.update({"exp": expire})
-    encoded_jwt: str = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt: str = jwt.encode(
+        to_encode, 
+        settings.jwt_secret_key, 
+        algorithm=settings.jwt_algorithm
+    )
     return encoded_jwt
