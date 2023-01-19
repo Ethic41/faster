@@ -43,6 +43,7 @@ class Settings(BaseSettings):
 
     # url
     token_url: str
+    frontend_url: str
 
     @validator("database_url")
     def _val_db_url(cls, v: str, values: dict[str, Any]) -> str:
