@@ -31,7 +31,8 @@ class Settings(BaseSettings):
     database_private_address: str
     database_public_address: str
     database_port: str
-    database_url: str = ""
+    database_private_url: str = ""
+    database_public_url: str = ""
     database_pool_size: int = 50
     database_max_overflow: int = 85
 
@@ -56,10 +57,16 @@ class Settings(BaseSettings):
     # cors
     cors_origins: list[str] = []
 
-    @validator("database_url")
-    def _val_db_url(cls, v: str, values: dict[str, Any]) -> str:
+    @validator("database_private_url")
+    def _val_private_db_url(cls, v: str, values: dict[str, Any]) -> str:
 
         return f"postgresql://{values['database_username']}:{values['database_password']}@{values['database_private_address']}:{values['database_port']}/{values['database_name']}" # noqa E501
+    
+
+    @validator("database_public_url")
+    def _val_public_db_url(cls, v: str, values: dict[str, Any]) -> str:
+
+        return f"postgresql://{values['database_username']}:{values['database_password']}@{values['database_public_address']}:{values['database_port']}/{values['database_name']}" # noqa E501
     
 
     class Config:
