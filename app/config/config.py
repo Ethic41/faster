@@ -53,6 +53,9 @@ class Settings(BaseSettings):
     cloud_bucket_name: str
     cloud_storage_url: str
 
+    # cors
+    cors_origins: list[str] = []
+
     @validator("database_url")
     def _val_db_url(cls, v: str, values: dict[str, Any]) -> str:
 
