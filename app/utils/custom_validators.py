@@ -24,11 +24,11 @@ def currency_out(amount: float) -> Optional[float]:
     return None
 
 
-def currency_in_val(field: str) -> classmethod[Any]:
+def currency_in_val(field: str) -> Any:
     return validator(field, allow_reuse=True)(currency_in)
 
 
-def currency_out_val(field: str) -> classmethod[Any]:
+def currency_out_val(field: str) -> Any:
     return validator(field, allow_reuse=True)(currency_out)
 
 

@@ -59,7 +59,7 @@ class Settings(BaseSettings):
     @validator("database_url")
     def _val_db_url(cls, v: str, values: dict[str, Any]) -> str:
 
-        return f"postgres://{values['database_username']}:{values['database_password']}@{values['database_private_address']}:{values['database_port']}/{values['database_name']}" # noqa E501
+        return f"postgresql://{values['database_username']}:{values['database_password']}@{values['database_private_address']}:{values['database_port']}/{values['database_name']}" # noqa E501
     
 
     class Config:
