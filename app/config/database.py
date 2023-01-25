@@ -18,6 +18,14 @@ engine = create_engine(
     max_overflow=settings.database_max_overflow,
 )
 
+test_engine = create_engine(
+    settings.database_test_url,
+    pool_size=settings.database_pool_size,
+    max_overflow=settings.database_max_overflow,
+)
+
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
 
 Base = declarative_base()

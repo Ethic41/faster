@@ -28,11 +28,13 @@ class Settings(BaseSettings):
     database_username: str
     database_password: str
     database_name: str
+    test_database_name: str
     database_private_address: str
     database_public_address: str
     database_port: str
     database_private_url: str = ""
     database_public_url: str = ""
+    database_test_url: str = ""
     database_pool_size: int = 50
     database_max_overflow: int = 85
 
@@ -68,15 +70,12 @@ class Settings(BaseSettings):
 
         return f"postgresql://{values['database_username']}:{values['database_password']}@{values['database_public_address']}:{values['database_port']}/{values['database_name']}" # noqa E501
     
+    
+    @validator("database_test_url")
+    def _val_test_db_url(cls, v: str, values: dict[str, Any]) -> str:
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        
-
-
-class TestSettings(BaseSettings):
-    pass
+        return f"postgresql://{values['database_username']}:{values['database_password']}@{values['database_public_address']}:{values['database_port']}/{values['test_database_name']}" # noqa E501
+    
 
     class Config:
         env_file = ".env"
@@ -84,4 +83,3 @@ class TestSettings(BaseSettings):
 
 
 settings = Settings()
-test_settings = TestSettings()
