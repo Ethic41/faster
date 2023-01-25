@@ -28,64 +28,98 @@ def init_db(db: Session) -> None:
     
     firstname = input('Enter superadmin firstname [Super]: ')
     lastname = input('Enter superadmin lastname [Admin]: ')
+    middlename = input('Enter superadmin middle name: ')
     
     user_dict = {
         'email': email,
         'firstname': firstname if len(firstname) > 0 else 'Super',
         'lastname': firstname if len(lastname) > 0 else 'Admin',
+        'middlename': middlename,
         'password_hash': get_password_hash(password)
     }
 
     perms = [
-        'can_create_permission', 
-        'can_view_permission', 
-        'can_modify_permission', 
-        'can_delete_permission'
+        'permission:create', 
+        'permission:read', 
+        'permission:update',
+        'permission:list',
+        'permission:delete',
     ]
 
     role_perms = [
-        'can_create_role', 
-        'can_view_role', 
-        'can_modify_role', 
-        'can_delete_role'
+        'role:create', 
+        'role:read', 
+        'role:update', 
+        'role:list',
+        'role:delete',
     ]
 
     group_perms = [
-        'can_create_group', 
-        'can_view_group', 
-        'can_modify_group', 
-        'can_delete_group'
+        'group:create', 
+        'group:read', 
+        'group:update', 
+        'group:list',
+        'group:delete',
     ]
 
-    perm_admin = ac_models.Role(name='permission_admin')
-    role_admin = ac_models.Role(name='role_admin')
-    group_admin = ac_models.Role(name='group_admin')
+    admin_perms = [
+        'admin:create',
+        'admin:read',
+        'admin:update',
+        'admin:list',
+        'admin:delete',
+    ]
+
+    """
+    Possible roles:
+    - owner
+    - creator
+    - editor
+    - viewer
+    - lister
+    - deleter
+    """
+    perm_owner = ac_models.Role(name='permission:owner')
+    role_owner = ac_models.Role(name='role:owner')
+    group_owner = ac_models.Role(name='group:owner')
+    admin_owner = ac_models.Role(name='admin:owner')
 
     for perm_name in perms:
         perm = ac_models.Permission(name=perm_name)
-        perm_admin.permissions.append(perm)
+        perm_owner.permissions.append(perm)
         db.add(perm)
+    
     for perm_name in role_perms:
         perm = ac_models.Permission(name=perm_name)
-        role_admin.permissions.append(perm)
+        role_owner.permissions.append(perm)
         db.add(perm)
+    
     for perm_name in group_perms:
         perm = ac_models.Permission(name=perm_name)
-        group_admin.permissions.append(perm)
+        group_owner.permissions.append(perm)
+        db.add(perm)
+    
+    for perm_name in admin_perms:
+        perm = ac_models.Permission(name=perm_name)
+        admin_owner.permissions.append(perm)
         db.add(perm)
 
     super_admin_group = ac_models.Group(name='super_admin_group')
-    super_admin_group.roles.append(perm_admin)
-    super_admin_group.roles.append(role_admin)
-    super_admin_group.roles.append(group_admin)
+    super_admin_group.roles.append(perm_owner)
+    super_admin_group.roles.append(role_owner)
+    super_admin_group.roles.append(group_owner)
+    super_admin_group.roles.append(admin_owner)
+
     user = users_models.User(**user_dict)
     user.groups.append(super_admin_group)
+
     db.add_all([
-        perm_admin, 
-        role_admin, 
-        group_admin, 
+        perm_owner, 
+        role_owner, 
+        group_owner, 
         super_admin_group, 
         user
     ])
+
     db.commit()
 
