@@ -9,7 +9,7 @@
 from app.user import schemas as user_schemas
 
 
-from app.utils.misc import gen_email, gen_random_str
+from app.utils.misc import gen_email, gen_random_str, gen_random_uuid
 
 
 def gen_user() -> user_schemas.UserIn:
@@ -27,4 +27,8 @@ def gen_user_update() -> user_schemas.UserUpdate:
         middlename=gen_random_str(),
         email=gen_email(),
     )
+
+
+def gen_uuid() -> str:
+    return gen_random_uuid()
 

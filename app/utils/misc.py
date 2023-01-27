@@ -15,6 +15,7 @@ from pathlib import Path
 import requests
 import calendar
 from passlib import pwd
+import ulid
 
 
 def gen_email(mail_str: str = "") -> str:
@@ -29,6 +30,10 @@ def gen_random_password() -> str:
 def gen_random_str() -> str:
     rand_str: str = pwd.genphrase(10)
     return rand_str
+
+
+def gen_random_uuid() -> str:
+    return ulid.new().str
 
 
 def gen_random_nin() -> int:
