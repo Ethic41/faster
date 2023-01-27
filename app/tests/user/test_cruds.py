@@ -24,3 +24,17 @@ def test_create_user(crud_util: CrudUtil) -> Any:
     assert hasattr(user, "id")
     assert hasattr(user, "password_hash")
 
+
+def test_create_admin_user(crud_util: CrudUtil) -> Any:
+    user_data: schemas.UserIn = gen_user()
+    user = cruds.create_user(
+        crud_util,
+        user_data,
+        is_admin=True
+    )
+    assert user.email == user_data.email
+    assert user.is_admin is True
+    assert user.is_active is True
+    assert hasattr(user, "id")
+    assert hasattr(user, "password_hash")
+
