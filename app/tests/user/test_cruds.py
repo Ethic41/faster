@@ -83,3 +83,20 @@ def test_get_user_by_email_not_found(crud_util: CrudUtil) -> Any:
             EmailStr("somenonexistentmail@mail.com"),
         )
 
+
+def test_get_user_by_uuid(crud_util: CrudUtil, user: models.User) -> Any:
+    user = cruds.get_user_by_uuid(
+        crud_util,
+        user.uuid
+    )
+    assert user.uuid == user.uuid
+    assert hasattr(user, "id")
+
+
+def test_get_user_by_uuid_not_found(crud_util: CrudUtil) -> Any:
+    with pytest.raises(HTTPException):
+        cruds.get_user_by_uuid(
+            crud_util,
+            "somenonexistentuuid",
+        )
+
