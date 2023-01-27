@@ -9,10 +9,21 @@
 
 from fastapi import HTTPException
 from typing import Any
-from app.user import cruds, schemas
+from pydantic import EmailStr
+from app.user import cruds, schemas, models
 from app.utils.crud_util import CrudUtil
 from app.tests.utils.utils import gen_user
 import pytest
+
+@pytest.fixture(scope="module")
+def user(crud_util: CrudUtil) -> Any:
+    user_data: schemas.UserIn = gen_user()
+    user = cruds.create_user(
+        crud_util,
+        user_data,
+    )
+    return user
+
 
 def test_create_user(crud_util: CrudUtil) -> Any:
     user_data: schemas.UserIn = gen_user()
@@ -50,8 +61,25 @@ def test_create_duplicate_user(crud_util: CrudUtil) -> Any:
         )
         assert user.email == user_data.email
 
-        user = cruds.create_user(
+        cruds.create_user(
             crud_util,
             user_data,
+        )
+
+
+def test_get_user_by_email(crud_util: CrudUtil, user: models.User) -> Any:
+    user = cruds.get_user_by_email(
+        crud_util,
+        EmailStr(user.email)
+    )
+    assert user.email == user.email
+    assert hasattr(user, "id")
+
+
+def test_get_user_by_email_not_found(crud_util: CrudUtil) -> Any:
+    with pytest.raises(HTTPException):
+        cruds.get_user_by_email(
+            crud_util,
+            EmailStr("somenonexistentmail@mail.com"),
         )
 

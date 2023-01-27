@@ -87,9 +87,9 @@ class CrudUtil:
             
             if order != "asc":
                 return self.db.query(model_to_get).filter(and_(*conditions)).\
-                    order_by(getattr(model_to_get, order_by_column).desc()).first()
+                    order_by(getattr(model_to_get, order_by_column).desc()).one()
             
-            return self.db.query(model_to_get).filter(and_(*conditions)).first()
+            return self.db.query(model_to_get).filter(and_(*conditions)).one()
         
         except AttributeError:
             raise HTTPException(
@@ -448,7 +448,7 @@ class CrudUtil:
         update: BaseModel
     ) -> None:
 
-        update_dict = update.dict(exclude_unset=True)
+        update_dict = self.__remove_invalid_fields(model_to_update, update)
 
         for key, value in update_dict.items():
             setattr(model_to_update, key, value)
@@ -463,13 +463,10 @@ class CrudUtil:
         update: BaseModel
     ) -> None:
 
-        update_dict = update.dict(exclude_unset=True)
-        columns: list[str] = model_to_update.__table__.c.keys()
-
+        update_dict = self.__remove_invalid_fields(model_to_update, update)
+        
         for key, value in update_dict.items():
-            # if it's a valid column
-            if key in columns:
-                setattr(model_to_update, key, value)
+            setattr(model_to_update, key, value)
         
         self.db.flush()
 
@@ -490,6 +487,20 @@ class CrudUtil:
 
         self.db.delete(model_to_delete)
         self.db.flush()
+    
+
+    def __remove_invalid_fields(
+        self, 
+        model: Any, 
+        data: BaseModel
+    ) -> dict[str, Any]:
+
+        columns: set[str] = set(model.__table__.c.keys())
+        data_fields: set[str] = set(data.dict(exclude_unset=True).keys())
+
+        data_dict = data.dict(exclude=set(data_fields - columns))
+
+        return data_dict
 
 
 # todo: merge with count
