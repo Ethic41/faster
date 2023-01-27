@@ -19,11 +19,11 @@ httpx = "^0.23.3"
 ulid-py = "^1.1.0"
 qrcode = "^7.3.1"
 Pillow = "^9.4.0"
-SQLAlchemy = "^1.4.46"
 sendgrid = "^6.9.7"
 requests = "^2.28.2"
 inflect = "^6.0.2"
 pytest-pretty = "^1.0.1"
+SQLAlchemy = "<1.4"
 
 [tool.poetry.dev-dependencies]
 pytest-cov = "^4.0.0"
@@ -31,8 +31,8 @@ pytest = "^7.2.0"
 mypy = "^0.770"
 types-requests = "^2.28.11"
 types-Pillow = "^9.4.0"
-sqlalchemy-stubs = "^0.3"
 ruff = "^0.0.230"
+sqlalchemy-stubs = "<0.4"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
