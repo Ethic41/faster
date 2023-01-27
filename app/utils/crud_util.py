@@ -16,7 +16,6 @@ from typing import Any, Generator
 from pydantic.main import BaseModel
 
 from sqlalchemy.orm import Session
-from sqlalchemy.orm.decl_api import DeclarativeMeta as SqlModel
 from fastapi import Depends, HTTPException
 
 
@@ -39,14 +38,21 @@ class CrudUtil:
 
     def create_model(
         self,
-        model_to_create: SqlModel,
+        model_to_create: Any,
         create: BaseModel,
         autocommit: bool = True
-    ) -> SqlModel:
+    ) -> Any:
 
         try:
 
-            db_model = model_to_create(**create.dict())
+            columns: set[str] = set(model_to_create.__table__.c.keys())
+            create_columns: set[str] = set(create.dict().keys())
+
+            db_model = model_to_create(
+                **create.dict(exclude=set(create_columns - columns))
+            )
+            
+
             if not autocommit:
                 self.__add_no_commit(db_model)
                 return db_model
@@ -66,7 +72,7 @@ class CrudUtil:
 
     def get_model_or_404(
         self,
-        model_to_get: SqlModel,
+        model_to_get: Any,
         model_conditions: dict[str, Any] = {},
         order_by_column: str = "id",
         order: str = "asc"
@@ -98,7 +104,7 @@ class CrudUtil:
 
     def update_model(
         self, 
-        model_to_update: SqlModel, 
+        model_to_update: Any, 
         update: BaseModel,  
         update_conditions: dict[str, Any] = {},
         autocommit: bool = True
@@ -129,7 +135,7 @@ class CrudUtil:
 
     def list_model(
         self,
-        model_to_list: SqlModel,
+        model_to_list: Any,
         list_conditions: dict[str, Any] = {},
         date_range: DateRange | None = None,
         skip: int = 0,
@@ -232,7 +238,7 @@ class CrudUtil:
 
     def delete_model(
         self, 
-        model_to_delete: SqlModel, 
+        model_to_delete: Any, 
         delete_conditions: dict[str, Any] = {},
         autocommit: bool = True,
     ) -> dict[str, ActionStatus]:
@@ -261,7 +267,7 @@ class CrudUtil:
 
     def ensure_unique_model(
         self, 
-        model_to_check: SqlModel, 
+        model_to_check: Any, 
         unique_condition: dict[str, Any],
     ) -> None:
         
@@ -289,7 +295,7 @@ class CrudUtil:
 
     def get_model_sum(
         self,
-        model: SqlModel,
+        model: Any,
         column_to_sum: str,
         model_conditions: dict[str, Any] = {},
         date_range: DateRange | None = None,
@@ -348,7 +354,7 @@ class CrudUtil:
 
     def get_model_count(
         self,
-        model_to_count: SqlModel,
+        model_to_count: Any,
         column_to_count_by: str,
         model_conditions: dict[str, Any] = {},
         date_range: DateRange | None = None,
@@ -419,7 +425,7 @@ class CrudUtil:
 
     def __add_and_commit(
         self, 
-        model_to_add: SqlModel
+        model_to_add: Any
     ) -> None:
 
         self.db.add(model_to_add)
@@ -429,7 +435,7 @@ class CrudUtil:
 
     def __add_no_commit(
         self, 
-        model_to_add: SqlModel
+        model_to_add: Any
     ) -> None:
 
         self.db.add(model_to_add)
@@ -438,7 +444,7 @@ class CrudUtil:
 
     def __update_and_commit(
         self, 
-        model_to_update: SqlModel, 
+        model_to_update: Any, 
         update: BaseModel
     ) -> None:
 
@@ -453,7 +459,7 @@ class CrudUtil:
 
     def __update_no_commit(
         self, 
-        model_to_update: SqlModel, 
+        model_to_update: Any, 
         update: BaseModel
     ) -> None:
 
@@ -470,7 +476,7 @@ class CrudUtil:
 
     def __delete_and_commit(
         self, 
-        model_to_delete: SqlModel
+        model_to_delete: Any
     ) -> None:
 
         self.db.delete(model_to_delete)
@@ -479,7 +485,7 @@ class CrudUtil:
 
     def __delete_no_commit(
         self, 
-        model_to_delete: SqlModel
+        model_to_delete: Any
     ) -> None:
 
         self.db.delete(model_to_delete)
@@ -489,7 +495,7 @@ class CrudUtil:
 # todo: merge with count
 # def get_model_like_column_count(
 #     db: Session,
-#     model: SqlModel,
+#     model: Any,
 #     column: str,
 #     model_conditions: dict[str, Any] = {},
 #     date_range: DateRange | None = None
