@@ -19,3 +19,12 @@ def gen_user() -> user_schemas.UserIn:
         lastname=gen_random_str(),
     )
 
+
+def gen_user_update() -> user_schemas.UserUpdate:
+    return user_schemas.UserUpdate(
+        firstname=gen_random_str(),
+        lastname=gen_random_str(),
+        middlename=gen_random_str(),
+        email=gen_email(),
+    )
+

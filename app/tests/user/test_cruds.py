@@ -12,7 +12,7 @@ from typing import Any
 from pydantic import EmailStr
 from app.user import cruds, schemas, models
 from app.utils.crud_util import CrudUtil
-from app.tests.utils.utils import gen_user
+from app.tests.utils.utils import gen_user, gen_user_update
 import pytest
 
 @pytest.fixture(scope="module")
@@ -98,5 +98,33 @@ def test_get_user_by_uuid_not_found(crud_util: CrudUtil) -> Any:
         cruds.get_user_by_uuid(
             crud_util,
             "somenonexistentuuid",
+        )
+
+
+def test_update_user(crud_util: CrudUtil, user: models.User) -> Any:
+    user_data: schemas.UserUpdate = gen_user_update()
+    
+    # before update, they are not equal
+    assert user.email != user_data.email
+    assert user.firstname != user_data.firstname
+    
+    updated_user: models.User = cruds.update_user(
+        crud_util,
+        user.uuid,
+        user_data
+    )    
+
+    # after update, they are equal
+    assert updated_user.email == user_data.email
+    assert updated_user.firstname == user_data.firstname
+
+
+def test_update_user_not_found(crud_util: CrudUtil) -> Any:
+    with pytest.raises(HTTPException):
+        user_data: schemas.UserUpdate = gen_user_update()
+        cruds.update_user(
+            crud_util,
+            "somenonexistentuuid",
+            user_data
         )
 
