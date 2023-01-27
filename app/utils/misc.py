@@ -17,9 +17,9 @@ import calendar
 from passlib import pwd
 
 
-def gen_email(nin: str = "") -> str:
-    nin = nin or str(gen_random_nin())
-    return f"{nin}@gmail.com"
+def gen_email(mail_str: str = "") -> str:
+    mail_str = mail_str or gen_random_str()
+    return f"{mail_str}@gmail.com"
 
 
 def gen_random_password() -> str:
