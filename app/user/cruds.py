@@ -26,6 +26,7 @@ def create_user(
     # in class using validators
     user_to_create = schemas.UserCreate(
         **user_data.dict(),
+        password="",
         password_hash="",
         is_admin=is_admin,
     )

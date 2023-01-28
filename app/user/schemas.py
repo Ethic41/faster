@@ -18,7 +18,7 @@ class UserIn(BaseModel):
 
 class UserCreate(BaseModel):
     email: EmailStr
-    password: str = Field("")
+    password: str
     password_hash: str
     firstname: str
     lastname: str
