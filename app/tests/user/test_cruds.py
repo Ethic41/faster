@@ -13,7 +13,8 @@ from typing import Any
 from pydantic import EmailStr
 from app.user import cruds, schemas, models
 from app.utils.crud_util import CrudUtil
-from app.tests.utils.utils import gen_user, gen_user_update, gen_uuid, password_hash, verify_password_hash
+from app.tests.utils.utils import gen_user, gen_user_update, gen_uuid, \
+    verify_password_hash
 import pytest
 
 @pytest.fixture(scope="module")
