@@ -7,12 +7,13 @@
 # @Version : 1.0.0
 
 
+from pathlib import Path
 from fastapi import HTTPException
 from typing import Any
 from pydantic import EmailStr
 from app.user import cruds, schemas, models
 from app.utils.crud_util import CrudUtil
-from app.tests.utils.utils import gen_user, gen_user_update, gen_uuid
+from app.tests.utils.utils import gen_user, gen_user_update, gen_uuid, password_hash, verify_password_hash
 import pytest
 
 @pytest.fixture(scope="module")
@@ -21,6 +22,17 @@ def user(crud_util: CrudUtil) -> Any:
     user = cruds.create_user(
         crud_util,
         user_data,
+    )
+    return user
+
+
+@pytest.fixture(scope="module")
+def admin_user(crud_util: CrudUtil, mock_account_create_mail: Any) -> Any:
+    user_data: schemas.UserIn = gen_user()
+    user = cruds.create_user(
+        crud_util,
+        user_data,
+        is_admin=True
     )
     return user
 
@@ -38,13 +50,20 @@ def test_create_user(crud_util: CrudUtil) -> Any:
     assert hasattr(user, "password_hash")
 
 
-def test_create_admin_user(crud_util: CrudUtil) -> Any:
+def test_create_admin_user(
+    crud_util: CrudUtil, 
+    create_account_mailbox: Path,
+) -> Any:
     user_data: schemas.UserIn = gen_user()
     user = cruds.create_user(
         crud_util,
         user_data,
         is_admin=True
     )
+
+    admin_password = create_account_mailbox.read_text().strip()
+
+    assert verify_password_hash(admin_password, user.password_hash)
     assert user.email == user_data.email
     assert user.is_admin is True
     assert user.is_active is True
@@ -147,4 +166,21 @@ def test_delete_user_not_found(crud_util: CrudUtil) -> Any:
             crud_util,
             gen_uuid(),
         )
+
+
+def test_authenticate_user(
+    crud_util: CrudUtil, 
+    admin_user: models.User,
+    create_account_mailbox: Path
+) -> Any:
+    
+    admin_password = create_account_mailbox.read_text().strip()
+    authenticated_user = cruds.authenticate_user(
+        crud_util,
+        EmailStr(admin_user.email),
+        admin_password
+    )
+
+    assert authenticated_user.email == admin_user.email
+    assert authenticated_user.uuid == admin_user.uuid
 
