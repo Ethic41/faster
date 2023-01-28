@@ -8,8 +8,8 @@
 
 from app.user import schemas as user_schemas
 
-
 from app.utils.misc import gen_email, gen_random_str, gen_random_uuid
+from app.utils.user import get_password_hash, verify_password
 
 
 def gen_user() -> user_schemas.UserIn:
@@ -31,4 +31,12 @@ def gen_user_update() -> user_schemas.UserUpdate:
 
 def gen_uuid() -> str:
     return gen_random_uuid()
+
+
+def password_hash(password: str) -> str:
+    return get_password_hash(password)
+
+
+def verify_password_hash(password: str, password_hash: str) -> bool:
+    return verify_password(password, password_hash)
 

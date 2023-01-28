@@ -28,7 +28,7 @@ def gen_random_password() -> str:
 
 
 def gen_random_str() -> str:
-    rand_str: str = pwd.genphrase(10)
+    rand_str: str = f"{pwd.genphrase(10)}_{pwd.genphrase(10)}"
     return rand_str
 
 
