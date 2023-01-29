@@ -449,7 +449,6 @@ class CrudUtil:
     ) -> None:
 
         update_dict = self.__remove_invalid_fields(model_to_update, update)
-
         for key, value in update_dict.items():
             setattr(model_to_update, key, value)
         
@@ -498,7 +497,10 @@ class CrudUtil:
         columns: set[str] = set(model.__table__.c.keys())
         data_fields: set[str] = set(data.dict(exclude_unset=True).keys())
 
-        data_dict = data.dict(exclude=set(data_fields - columns))
+        data_dict = data.dict(
+            exclude=set(data_fields - columns),
+            exclude_unset=True,
+        )
 
         return data_dict
 
