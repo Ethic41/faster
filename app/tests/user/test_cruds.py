@@ -17,7 +17,9 @@ from app.tests.utils.utils import gen_user, gen_user_update, gen_uuid, \
     verify_password_hash
 import pytest
 
-@pytest.fixture(scope="module")
+from app.utils.misc import gen_email, gen_random_password, gen_random_str
+
+@pytest.fixture(scope="function")
 def user(crud_util: CrudUtil) -> Any:
     user_data: schemas.UserIn = gen_user()
     user = cruds.create_user(
@@ -27,7 +29,7 @@ def user(crud_util: CrudUtil) -> Any:
     return user
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def admin_user(crud_util: CrudUtil, mock_account_create_mail: Any) -> Any:
     user_data: schemas.UserIn = gen_user()
     user = cruds.create_user(
@@ -36,6 +38,23 @@ def admin_user(crud_util: CrudUtil, mock_account_create_mail: Any) -> Any:
         is_admin=True
     )
     return user
+
+
+@pytest.fixture(scope="function")
+def admin_users(
+    crud_util: CrudUtil, 
+    mock_account_create_mail: Any
+) -> list[models.User]:
+    users = []
+    for i in range(5):
+        user_data: schemas.UserIn = gen_user()
+        user = cruds.create_user(
+            crud_util,
+            user_data,
+            is_admin=True
+        )
+        users.append(user)
+    return users
 
 
 def test_create_user(crud_util: CrudUtil) -> Any:
@@ -184,4 +203,159 @@ def test_authenticate_user(
 
     assert authenticated_user.email == admin_user.email
     assert authenticated_user.uuid == admin_user.uuid
+
+
+def test_authenticate_user_not_found(crud_util: CrudUtil) -> Any:
+    with pytest.raises(HTTPException) as e:
+        cruds.authenticate_user(
+            crud_util,
+            EmailStr(gen_email()),
+            gen_random_password(),
+        )
+
+    assert e.value.status_code == 400
+    assert e.value.detail == "Email and password do not match"
+
+
+def test_authenticate_user_wrong_password(
+    crud_util: CrudUtil, user: models.User
+) -> Any:
+    with pytest.raises(HTTPException) as e:
+        cruds.authenticate_user(
+            crud_util,
+            EmailStr(user.email),
+            gen_random_password(),
+        )
+
+    assert e.value.status_code == 400
+    assert e.value.detail == "Email and password do not match"
+
+
+def test_authenticate_inactive_user(
+    crud_util: CrudUtil, 
+    user: models.User,
+) -> Any:
+
+    cruds.update_user(
+        crud_util,
+        user.uuid,
+        schemas.UserUpdate(
+            is_active=False
+        )
+    )
+
+    with pytest.raises(HTTPException) as e:
+        cruds.authenticate_user(
+            crud_util,
+            EmailStr(user.email),
+            gen_random_password(),
+        )
+
+    assert e.value.status_code == 400
+    assert e.value.detail == "User is not active"
+
+
+def test_request_password_reset(
+    crud_util: CrudUtil, 
+    user: models.User,
+    password_reset_mailbox: Path
+) -> Any:
+
+    response = cruds.request_password_reset(
+        crud_util,
+        EmailStr(user.email)
+    )
+
+    password_reset_link = password_reset_mailbox.read_text().strip()
+
+    assert "reset-password" in password_reset_link
+    assert response["detail"] == "We've sent a password reset link to your mail"
+
+
+def test_request_password_reset_invalid_email(
+    crud_util: CrudUtil,
+) -> Any:
+
+    response = cruds.request_password_reset(
+        crud_util,
+        EmailStr(gen_email())
+    )
+
+    assert response["detail"] == "We've sent a password reset link to your mail"
+
+
+def test_reset_password(
+    crud_util: CrudUtil, 
+    user: models.User,
+    password_reset_mailbox: Path,
+    password_change_mailbox: Path,
+) -> Any:
+
+    cruds.request_password_reset(
+        crud_util,
+        EmailStr(user.email)
+    )
+    password_reset_link = password_reset_mailbox.read_text().strip()
+    password_reset_token = password_reset_link.split("/")[-1]
+
+    response = cruds.reset_password(
+        crud_util,
+        password_reset_token,
+    )
+
+    new_password = password_change_mailbox.read_text().strip()
+
+    db_user = cruds.get_user_by_uuid(
+        crud_util,
+        user.uuid
+    )
+
+    assert "Password reset successful" in response["detail"]
+    assert new_password in response["detail"]
+    assert verify_password_hash(new_password, db_user.password_hash)
+
+
+def test_reset_password_invalid_token(
+    crud_util: CrudUtil, 
+) -> Any:
+
+    with pytest.raises(HTTPException) as e:
+        cruds.reset_password(
+            crud_util,
+            gen_random_str(),
+        )
+
+    assert e.value.status_code == 400
+    assert e.value.detail == "Invalid token"
+
+
+def test_list_admin_users(
+    crud_util: CrudUtil, 
+    admin_users: list[models.User],
+) -> Any:
+
+    db_users: list[schemas.UserOut] = cruds.list_admin_users(
+        crud_util,
+        schemas.AdminUserFilter(),
+    ).model_list
+
+    assert admin_users[0].email in [user.email for user in db_users]
+
+
+def test_list_admin_users_filter(
+    crud_util: CrudUtil,
+    admin_users: list[models.User],
+) -> Any:
+
+    db_users: schemas.UserList = cruds.list_admin_users(
+        crud_util,
+        schemas.AdminUserFilter(
+            email=admin_users[0].email
+        ),
+        limit=1,
+    )
+
+
+    assert len(db_users.model_list) == 1
+    assert db_users.model_list[0].email == admin_users[0].email
 
