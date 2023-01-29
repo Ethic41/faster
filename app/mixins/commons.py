@@ -86,6 +86,11 @@ class ListBase(BaseModel):
     _val_sum = currency_out_val("sum")
 
 
+class FilterBase(BaseModel):
+    skip: int
+    limit: int
+
+
 class UserMin(BaseSchemaMixin):
     email: EmailStr
     firstname: str
