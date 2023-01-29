@@ -66,11 +66,63 @@ def mock_account_create_mail(
 
 
 @pytest.fixture(scope="module")
+def mock_password_reset_mail(
+    monkeymodule: Any, tmp_path_factory: TempPathFactory
+) -> None:
+    def mock_send_password_reset_mail(*args: Any, **kwargs: Any) -> None:
+        tmp_dir = tmp_path_factory.getbasetemp()
+        tmp_dir = tmp_dir / "mailbox"
+        tmp_dir.mkdir(exist_ok=True)
+        tmp_file = tmp_dir / "password_reset_mail.txt"
+        tmp_file.write_text(args[1])
+    
+    monkeymodule.setattr(
+        "app.user.cruds.send_password_reset_link_mail", mock_send_password_reset_mail,
+    )
+
+
+@pytest.fixture(scope="module")
+def mock_password_change_mail(
+    monkeymodule: Any, tmp_path_factory: TempPathFactory
+) -> None:
+    def mock_send_password_change_mail(*args: Any, **kwargs: Any) -> None:
+        tmp_dir = tmp_path_factory.getbasetemp()
+        tmp_dir = tmp_dir / "mailbox"
+        tmp_dir.mkdir(exist_ok=True)
+        tmp_file = tmp_dir / "password_change_mail.txt"
+        tmp_file.write_text(args[1])
+    
+    monkeymodule.setattr(
+        "app.user.cruds.send_change_password_mail", mock_send_password_change_mail,
+    )
+
+
+@pytest.fixture(scope="module")
 def create_account_mailbox(
     mock_account_create_mail: Any,
     tmp_path_factory: TempPathFactory
 ) -> Path:
     tmp_dir = tmp_path_factory.getbasetemp()
     mail_file = tmp_dir / "mailbox" / "account_create_mail.txt"
+    return mail_file
+
+
+@pytest.fixture(scope="module")
+def password_reset_mailbox(
+    mock_password_reset_mail: Any,
+    tmp_path_factory: TempPathFactory
+) -> Path:
+    tmp_dir = tmp_path_factory.getbasetemp()
+    mail_file = tmp_dir / "mailbox" / "password_reset_mail.txt"
+    return mail_file
+
+
+@pytest.fixture(scope="module")
+def password_change_mailbox(
+    mock_password_change_mail: Any,
+    tmp_path_factory: TempPathFactory
+) -> Path:
+    tmp_dir = tmp_path_factory.getbasetemp()
+    mail_file = tmp_dir / "mailbox" / "password_change_mail.txt"
     return mail_file
 
