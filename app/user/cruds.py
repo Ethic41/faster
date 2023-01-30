@@ -1,6 +1,6 @@
 from typing import Any
 from pydantic import EmailStr
-from fastapi import HTTPException, BackgroundTasks
+from fastapi import HTTPException
 from jose import JWSError, jws
 
 from app.config.config import settings
@@ -235,7 +235,6 @@ def list_admin_users(
 def change_admin_password(
     cu: CrudUtil,
     user_uuid: str,
-    bg_task: BackgroundTasks
 ) -> schemas.PasswordChangeOut:
     db_user: models.User = cu.get_model_or_404(
         model_to_get=models.User, 
@@ -246,6 +245,6 @@ def change_admin_password(
     
     db_user.password_hash = hashed_password
     cu.db.commit()
-    bg_task.add_task(send_change_password_mail, db_user.email, password)
+    send_change_password_mail(db_user.email, password)
     return schemas.PasswordChangeOut(password=password)
 

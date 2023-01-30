@@ -9,7 +9,7 @@
 from typing import Any
 from fastapi.param_functions import Path
 from fastapi.security import OAuth2PasswordRequestForm
-from fastapi import APIRouter, Depends, BackgroundTasks
+from fastapi import APIRouter, Depends
 from pydantic import EmailStr
 from dotenv import load_dotenv
 
@@ -179,11 +179,10 @@ def update_admin(
 def change_admin_password(
     *,
     cu: CrudUtil = Depends(CrudUtil),
-    bg_task: BackgroundTasks,
     user_uuid: str = Path(...),
 ) -> schemas.PasswordChangeOut:
 
-    return cruds.change_admin_password(cu, user_uuid, bg_task)
+    return cruds.change_admin_password(cu, user_uuid)
 
 
 @users_router.delete(
