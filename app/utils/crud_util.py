@@ -18,9 +18,15 @@ from pydantic.main import BaseModel
 from sqlalchemy.orm import Session
 from fastapi import Depends, HTTPException
 
+from app.config.config import settings
+
 
 def get_db() -> Generator[Any, Any, Any]:
-    dbase = db.SessionLocal()
+    if settings.environment.value != "PRODUCTION":
+        dbase = db.TestSessionLocal()
+    else:
+        dbase = db.SessionLocal()
+    
     try:
         yield dbase
     finally:
