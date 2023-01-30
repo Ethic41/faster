@@ -13,12 +13,14 @@ from sqlalchemy.orm import Session
 from typing import Generator, Any
 from pytest import TempPathFactory
 import pytest
+from app.access_control import models as ac_models
 
 from app.config.database import TestSessionLocal, Base, test_engine
 from app.tests.utils.utils import gen_user
 from app.user import cruds as user_cruds, models as user_models, schemas as user_schemas
 from app.utils.crud_util import CrudUtil
 from app.main import app
+from app.utils.misc import find_perms
 
 
 Base.metadata.create_all(bind=test_engine)
@@ -45,15 +47,13 @@ def crud_util(db: Session) -> CrudUtil:
     return CrudUtil(db)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def client() -> Generator[Any, Any, Any]:
     with TestClient(app) as c:
         yield c
 
 
-
-
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def mock_account_create_mail(
     monkeymodule: Any, tmp_path_factory: TempPathFactory
 ) -> None:
@@ -69,7 +69,7 @@ def mock_account_create_mail(
     )
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def mock_password_reset_mail(
     monkeymodule: Any, tmp_path_factory: TempPathFactory
 ) -> None:
@@ -85,7 +85,7 @@ def mock_password_reset_mail(
     )
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def mock_password_change_mail(
     monkeymodule: Any, tmp_path_factory: TempPathFactory
 ) -> None:
@@ -101,7 +101,7 @@ def mock_password_change_mail(
     )
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def create_account_mailbox(
     mock_account_create_mail: Any,
     tmp_path_factory: TempPathFactory
@@ -111,7 +111,7 @@ def create_account_mailbox(
     return mail_file
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def password_reset_mailbox(
     mock_password_reset_mail: Any,
     tmp_path_factory: TempPathFactory
@@ -121,7 +121,7 @@ def password_reset_mailbox(
     return mail_file
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def password_change_mailbox(
     mock_password_change_mail: Any,
     tmp_path_factory: TempPathFactory
@@ -131,13 +131,42 @@ def password_change_mailbox(
     return mail_file
 
 
-@pytest.fixture(scope="function")
-def user(crud_util: CrudUtil) -> Any:
+@pytest.fixture(scope="session")
+def all_perms() -> list[str]:
+    return list(set(find_perms()))
+
+
+@pytest.fixture(scope="session")
+def super_user(
+    crud_util: CrudUtil, 
+    mock_account_create_mail: Any,
+    all_perms: list[str],
+) -> user_models.User:
     user_data: user_schemas.UserIn = gen_user()
     user = user_cruds.create_user(
         crud_util,
         user_data,
+        is_admin=True
     )
+
+    super_user_group = ac_models.Group(name="super_user_group")
+    super_owner = ac_models.Role(name="super:owner")
+    
+    for perm in all_perms:
+        super_owner.permissions.append(ac_models.Permission(name=perm))
+    
+    super_user_group.roles.append(super_owner)
+    user.groups.append(super_user_group)
+    crud_util.db.add_all([
+        super_owner,
+        super_user_group,
+    ])
+    crud_util.db.commit()
+    crud_util.db.refresh(super_user_group)
+    user.groups.append(super_user_group)
+    crud_util.db.commit()
+    crud_util.db.refresh(user)
+
     return user
 
 
@@ -153,6 +182,34 @@ def admin_user(crud_util: CrudUtil, mock_account_create_mail: Any) -> Any:
 
 
 @pytest.fixture(scope="function")
+def user(crud_util: CrudUtil) -> Any:
+    user_data: user_schemas.UserIn = gen_user()
+    user = user_cruds.create_user(
+        crud_util,
+        user_data,
+    )
+    return user
+
+
+@pytest.fixture(scope="function")
+def inactive_admin_user(crud_util: CrudUtil, mock_account_create_mail: Any) -> Any:
+    user_data: user_schemas.UserIn = gen_user()
+    user = user_cruds.create_user(
+        crud_util,
+        user_data,
+        is_admin=True
+    )
+    user = user_cruds.update_user(
+        crud_util,
+        user.uuid,
+        user_schemas.UserUpdate(
+            is_active=False
+        )
+    )
+    return user
+
+
+@pytest.fixture(scope="module")
 def admin_users(
     crud_util: CrudUtil, 
     mock_account_create_mail: Any
@@ -167,4 +224,26 @@ def admin_users(
         )
         users.append(user)
     return users
+
+
+@pytest.fixture(scope="session")
+def su_token_headers(
+    client: TestClient,
+    super_user: user_models.User,
+    create_account_mailbox: Path
+) -> dict[str, str]:
+    
+    password = create_account_mailbox.read_text().strip()
+
+    response = client.post(
+        "/auth/token",
+        json={
+            "email": super_user.email,
+            "password": password
+        }
+    )
+
+    res_payload = response.json()
+
+    return {"Authorization": f"Bearer {res_payload['access_token']}"}
 
