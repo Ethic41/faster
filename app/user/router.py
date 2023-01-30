@@ -11,7 +11,6 @@ from fastapi.param_functions import Path
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi import APIRouter, Depends
 from pydantic import EmailStr
-from dotenv import load_dotenv
 
 from app.access_control.cruds import get_group_by_name
 from app.dependencies import dependencies as deps
@@ -19,7 +18,6 @@ from app.user import cruds, schemas
 from app.utils.crud_util import CrudUtil
 from app.utils.user import create_access_token
 
-load_dotenv()
 
 users_router = APIRouter(
     prefix='/users',
@@ -81,7 +79,7 @@ def login(
             'email': user.email,
             'firstname': user.firstname,
             'lastname': user.lastname,
-            'user_group': user.groups[0].name,
+            'user_group': user.groups[0].name if user.groups else None,
         }
     }
 
