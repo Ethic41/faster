@@ -19,43 +19,6 @@ import pytest
 
 from app.utils.misc import gen_email, gen_random_password, gen_random_str
 
-@pytest.fixture(scope="function")
-def user(crud_util: CrudUtil) -> Any:
-    user_data: schemas.UserIn = gen_user()
-    user = cruds.create_user(
-        crud_util,
-        user_data,
-    )
-    return user
-
-
-@pytest.fixture(scope="function")
-def admin_user(crud_util: CrudUtil, mock_account_create_mail: Any) -> Any:
-    user_data: schemas.UserIn = gen_user()
-    user = cruds.create_user(
-        crud_util,
-        user_data,
-        is_admin=True
-    )
-    return user
-
-
-@pytest.fixture(scope="function")
-def admin_users(
-    crud_util: CrudUtil, 
-    mock_account_create_mail: Any
-) -> list[models.User]:
-    users = []
-    for i in range(5):
-        user_data: schemas.UserIn = gen_user()
-        user = cruds.create_user(
-            crud_util,
-            user_data,
-            is_admin=True
-        )
-        users.append(user)
-    return users
-
 
 def test_create_user(crud_util: CrudUtil) -> Any:
     user_data: schemas.UserIn = gen_user()
