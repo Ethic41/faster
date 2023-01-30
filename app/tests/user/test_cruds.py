@@ -359,3 +359,39 @@ def test_list_admin_users_filter(
     assert len(db_users.model_list) == 1
     assert db_users.model_list[0].email == admin_users[0].email
 
+
+def test_change_admin_user_password(
+    crud_util: CrudUtil,
+    admin_user: models.User,
+    password_change_mailbox: Path,
+) -> Any:
+
+    password_out = cruds.change_admin_password(
+        crud_util,
+        admin_user.uuid,
+    )
+
+    db_user = cruds.get_user_by_uuid(
+        crud_util,
+        admin_user.uuid
+    )
+
+    admin_password = password_change_mailbox.read_text().strip()
+
+    assert verify_password_hash(admin_password, db_user.password_hash)
+    assert admin_password == password_out.password
+
+
+def test_change_admin_password_invalid_uuid(
+    crud_util: CrudUtil,
+) -> Any:
+
+    with pytest.raises(HTTPException) as e:
+        cruds.change_admin_password(
+            crud_util,
+            gen_uuid(),
+        )
+
+    assert e.value.status_code == 404
+    assert e.value.detail == "User not found"
+
