@@ -10,7 +10,7 @@
 from pathlib import Path
 from fastapi.testclient import TestClient
 from app.user import models, schemas
-from app.utils.misc import gen_random_password
+from app.utils.misc import gen_email, gen_random_password
 
 
 def test_login(
@@ -53,4 +53,22 @@ def test_login_with_wrong_password(
     assert "detail" in res_payload
     assert res_payload["detail"] == "Email and password do not match"
 
+
+def test_login_with_wrong_email(
+    client: TestClient, 
+) -> None:
+
+    response = client.post(
+        "/auth/token",
+        json=schemas.Login(
+            email=gen_email(),
+            password=gen_random_password(),
+        ).dict()
+    )
+
+    res_payload = response.json()
+
+    assert response.status_code == 400
+    assert "detail" in res_payload
+    assert res_payload["detail"] == "Email and password do not match"
 
