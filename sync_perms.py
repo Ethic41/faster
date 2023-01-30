@@ -8,11 +8,10 @@
 
 
 from sqlalchemy.orm import Session
-from pathlib import Path
-import re
 
 from app.access_control import models
 from app.config.database import SessionLocal
+from app.utils.misc import find_perms
 
 
 
@@ -24,23 +23,10 @@ def create_perms(db: Session, perms: list[str]) -> None:
         
         if not db_perm:
             to_create.append(models.Permission(name=perm))
+    
+    input(f"press enter to create permissions: {[perm.name for perm in to_create]}")
     db.add_all(to_create)
     db.commit()
-
-
-def find_perms() -> list[str]:
-    app_dir = Path().cwd()
-
-    perms: list[str] = []
-    
-    for router_file in app_dir.rglob("router.py"):
-        with open(router_file, 'r') as file:
-            for line in file:
-                perm_line = re.findall(r'HasPermission.+', line)
-                if perm_line:
-                    perms.extend(re.findall(r'\w+:\w+', perm_line[0]))
-    
-    return perms
 
 
 def main() -> None:
@@ -51,3 +37,4 @@ def main() -> None:
 
 if __name__ == '__main__':
     main()
+

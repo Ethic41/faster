@@ -166,3 +166,18 @@ def number_of_weekday_btw_dates(day_name: str, from_date: date, to_date: date) -
     
     return count
 
+
+def find_perms() -> list[str]:
+    app_dir = Path().cwd() / "../"
+
+    perms: list[str] = []
+    
+    for router_file in app_dir.rglob("router.py"):
+        with open(router_file, 'r') as file:
+            for line in file:
+                perm_line = re.findall(r'HasPermission.+', line)
+                if perm_line:
+                    perms.extend(re.findall(r'\w+:\w+', perm_line[0]))
+    
+    return perms
+
