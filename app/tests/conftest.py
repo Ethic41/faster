@@ -15,11 +15,19 @@ from pytest import TempPathFactory
 import pytest
 
 from app.config.database import TestSessionLocal, Base, test_engine
+from app.tests.utils.utils import gen_user
+from app.user import cruds as user_cruds, models as user_models, schemas as user_schemas
 from app.utils.crud_util import CrudUtil
 from app.main import app
 
 
 Base.metadata.create_all(bind=test_engine)
+
+
+@pytest.fixture(scope="session")
+def monkeymodule() -> Any:
+    with pytest.MonkeyPatch.context() as m:
+        yield m
 
 
 @pytest.fixture(scope="session")
@@ -43,10 +51,6 @@ def client() -> Generator[Any, Any, Any]:
         yield c
 
 
-@pytest.fixture(scope="session")
-def monkeymodule() -> Any:
-    with pytest.MonkeyPatch.context() as m:
-        yield m
 
 
 @pytest.fixture(scope="module")
@@ -125,4 +129,42 @@ def password_change_mailbox(
     tmp_dir = tmp_path_factory.getbasetemp()
     mail_file = tmp_dir / "mailbox" / "password_change_mail.txt"
     return mail_file
+
+
+@pytest.fixture(scope="function")
+def user(crud_util: CrudUtil) -> Any:
+    user_data: user_schemas.UserIn = gen_user()
+    user = user_cruds.create_user(
+        crud_util,
+        user_data,
+    )
+    return user
+
+
+@pytest.fixture(scope="function")
+def admin_user(crud_util: CrudUtil, mock_account_create_mail: Any) -> Any:
+    user_data: user_schemas.UserIn = gen_user()
+    user = user_cruds.create_user(
+        crud_util,
+        user_data,
+        is_admin=True
+    )
+    return user
+
+
+@pytest.fixture(scope="function")
+def admin_users(
+    crud_util: CrudUtil, 
+    mock_account_create_mail: Any
+) -> list[user_models.User]:
+    users = []
+    for i in range(5):
+        user_data: user_schemas.UserIn = gen_user()
+        user = user_cruds.create_user(
+            crud_util,
+            user_data,
+            is_admin=True
+        )
+        users.append(user)
+    return users
 
