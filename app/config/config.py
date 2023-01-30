@@ -13,7 +13,7 @@ from enum import Enum
 
 
 class EnvType(str, Enum):
-    local: str = "LOCAL"
+    local: str = "DEVELOPMENT"
     testing: str = "TESTING"
     staging: str = "STAGING"
     production: str = "PRODUCTION"
