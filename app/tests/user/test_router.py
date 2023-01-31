@@ -8,6 +8,7 @@
 
 
 from pathlib import Path
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from jose import JWTError
 from pydantic import EmailStr
@@ -431,3 +432,112 @@ def test_change_admin_password_not_found(
     assert "detail" in res_payload
     assert res_payload["detail"] == "User not found"
 
+
+def test_delete_admin_user(
+    client: TestClient,
+    su_token_headers: dict[str, str],
+    admin_user: models.User,
+) -> None:
+
+    response = client.delete(
+        f"/users/{admin_user.uuid}",
+        headers=su_token_headers,
+    )
+
+    res_payload = response.json()
+
+    assert response.status_code == 200
+    assert "status" in res_payload
+    assert "success" in res_payload["status"]
+
+
+def test_delete_admin_user_invalid_token(
+    client: TestClient,
+    admin_user: models.User,
+) -> None:
+
+    with pytest.raises(JWTError):
+        client.delete(
+            f"/users/{admin_user.uuid}",
+            headers={"Authorization": f"Bearer {gen_random_password()}"},
+        )
+
+
+def test_delete_admin_user_not_found(
+    client: TestClient,
+    su_token_headers: dict[str, str],
+) -> None:
+
+    response = client.delete(
+        f"/users/{gen_uuid()}",
+        headers=su_token_headers,
+    )
+
+    res_payload = response.json()
+
+    assert response.status_code == 404
+    assert "detail" in res_payload
+    assert res_payload["detail"] == "User not found"
+
+
+def test_add_group_to_user(
+    client: TestClient,
+    su_token_headers: dict[str, str],
+    admin_user: models.User,
+) -> None:
+
+    response = client.post(
+        f"/users/{admin_user.uuid}/groups",
+        json={"groups": ["super_user_group"]},
+        headers=su_token_headers,
+    )
+
+    res_payload = response.json()
+
+    assert response.status_code == 200
+    assert res_payload["uuid"] == admin_user.uuid
+
+
+def test_add_group_to_user_invalid_token(
+    client: TestClient,
+    admin_user: models.User,
+) -> None:
+    
+    with pytest.raises(JWTError):
+        client.post(
+            f"/users/{admin_user.uuid}/groups",
+            json={"groups": ["super_user_group"]},
+            headers={"Authorization": f"Bearer {gen_random_password()}"},
+        )
+
+
+def test_add_group_to_user_not_found(
+    client: TestClient,
+    su_token_headers: dict[str, str],
+) -> None:
+    
+    response = client.post(
+        f"/users/{gen_uuid()}/groups",
+        json={"groups": ["super_user_group"]},
+        headers=su_token_headers,
+    )
+    
+    res_payload = response.json()
+
+    assert response.status_code == 409
+    assert "detail" in res_payload
+    assert res_payload["detail"] == "User not found"
+
+
+# def test_add_group_to_user_invalid_group(
+#     client: TestClient,
+#     su_token_headers: dict[str, str],
+#     admin_user: models.User,
+# ) -> None:
+    
+#     client.post(
+#         f"/users/{admin_user.uuid}/groups",
+#         json={"groups": ["non_super_user_group"]},
+#         headers=su_token_headers,
+#     )
+    
