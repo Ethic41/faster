@@ -220,22 +220,20 @@ def add_group_to_user(
 
 
 @users_router.delete(
-    '/{uuid}/groups',
+    '/{uuid}/groups/{group_name}',
     dependencies=[Depends(deps.HasPermission(["admin:update"]))]
 )
 def remove_group_from_user(
     *,
     cu: CrudUtil = Depends(CrudUtil),
     uuid: str,
-    groups: schemas.UserGroup,
+    group_name: str,
 ) -> schemas.UserSchema:
 
     user = cruds.get_user_by_uuid(cu, uuid=uuid)
-    group_list = groups.dict().pop('groups')
     
-    for group_name in group_list:
-        group = get_group_by_name(cu, group_name)
-        user.groups.remove(group)
+    group = get_group_by_name(cu, group_name)
+    user.groups.remove(group)
     
     cu.db.commit()
     cu.db.refresh(user)

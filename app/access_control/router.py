@@ -200,7 +200,7 @@ def remove_permission_from_role(
 )
 def create_group(
     *,
-    cu: CrudUtil = Depends(deps.get_db),
+    cu: CrudUtil = Depends(CrudUtil),
     group_data: schemas.GroupCreate,
 ) -> schemas.GroupSchema:
     

@@ -201,14 +201,10 @@ def list_admin_users(
     skip: int = 0,
     limit: int = 100
 ) -> schemas.UserList:
-    conditions = {
-        "firstname": filter_.firstname, 
-        "lastname": filter_.lastname, 
-        "email": filter_.email,
-        "middlename": filter_.middlename, 
-        "is_admin": True, 
-        "is_active": filter_.is_active
-    }
+    
+    conditions = filter_.dict(exclude_unset=True, exclude={"user_group_name"})
+    conditions["is_admin"] = True
+
     
     db_result: dict[str, Any] = cu.list_model(
         model_to_list=models.User,
