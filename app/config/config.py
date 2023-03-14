@@ -9,20 +9,11 @@
 
 from typing import Any
 from pydantic import BaseSettings, validator
-from enum import Enum
-
-
-class EnvType(str, Enum):
-    local: str = "DEVELOPMENT"
-    testing: str = "TESTING"
-    staging: str = "STAGING"
-    production: str = "PRODUCTION"
-
 
 class Settings(BaseSettings):
     """Production Settings"""
     app_name: str = "Faster Template"
-    environment: EnvType
+    environment: str = ""
     
     # database settings
     database_username: str
