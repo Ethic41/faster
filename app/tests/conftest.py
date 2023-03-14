@@ -53,6 +53,11 @@ def client() -> Generator[Any, Any, Any]:
         yield c
 
 
+@pytest.fixture(scope="session", autouse=True)
+def mock_env(monkeymodule: Any) -> None:
+    monkeymodule.setattr("app.config.config.settings.environment", "TESTING")
+
+
 @pytest.fixture(scope="session")
 def mock_account_create_mail(
     monkeymodule: Any, tmp_path_factory: TempPathFactory
