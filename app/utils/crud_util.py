@@ -22,9 +22,8 @@ from app.config.config import settings
 
 
 def get_db() -> Generator[Any, Any, Any]:
-    if settings.environment.value != "PRODUCTION":
+    if settings.environment == "TESTING":
         dbase = db.TestSessionLocal()
-        # dbase = db.SessionLocal()
     else:
         dbase = db.SessionLocal()
     
