@@ -1,0 +1,38 @@
+# Bissmillahirrahmanirraheem
+# Compose file inspired by @tiangolo's fullstack template
+version: "3.3"
+services:
+  
+  database:
+    container_name: faster_db
+    image: postgres:12
+    volumes:
+      - app-db-data:/var/lib/postgresql/data/pgdata
+    env_file:
+      - .env
+    environment:
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    networks:
+      - localnet
+      - default
+  
+  backend:
+    container_name: faster_backend
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - database
+    env_file:
+      - .env
+    networks:
+      - localnet
+      - default
+    ports:
+      - "8000:8000"
+  
+volumes:
+  app-db-data:
+
+networks:
+  localnet:
