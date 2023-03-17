@@ -1,18 +1,15 @@
 # Faster - one stop fastapi template
 
-## Test
+## Run
 
 ```bash
 cd faster
 # rename the base env file && edit the env file as you require
 mv .base.env .env
-pytest
 
-```
+# Edit .env file, for proper configs and security
 
-## Run
+# start the docker service
+docker compose up
 
-```bash
-# for local testing
-uvicorn app.main:app --reload
 ```
