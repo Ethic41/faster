@@ -16,9 +16,9 @@ class Settings(BaseSettings):
     environment: str = ""
     
     # database settings
-    database_username: str
-    database_password: str
-    database_name: str
+    postgres_user: str
+    postgres_password: str
+    postgres_db: str
     test_database_name: str
     database_private_address: str
     database_public_address: str
@@ -53,19 +53,19 @@ class Settings(BaseSettings):
     @validator("database_private_url")
     def _val_private_db_url(cls, v: str, values: dict[str, Any]) -> str:
 
-        return f"postgresql://{values['database_username']}:{values['database_password']}@{values['database_private_address']}:{values['database_port']}/{values['database_name']}" # noqa E501
+        return f"postgresql://{values['postgres_user']}:{values['postgres_password']}@{values['database_private_address']}:{values['database_port']}/{values['postgres_db']}" # noqa E501
     
 
     @validator("database_public_url")
     def _val_public_db_url(cls, v: str, values: dict[str, Any]) -> str:
 
-        return f"postgresql://{values['database_username']}:{values['database_password']}@{values['database_public_address']}:{values['database_port']}/{values['database_name']}" # noqa E501
+        return f"postgresql://{values['postgres_user']}:{values['postgres_password']}@{values['database_public_address']}:{values['database_port']}/{values['postgres_db']}" # noqa E501
     
     
     @validator("database_test_url")
     def _val_test_db_url(cls, v: str, values: dict[str, Any]) -> str:
 
-        return f"postgresql://{values['database_username']}:{values['database_password']}@{values['database_public_address']}:{values['database_port']}/{values['test_database_name']}" # noqa E501
+        return f"postgresql://{values['postgres_user']}:{values['postgres_password']}@{values['database_public_address']}:{values['database_port']}/{values['test_database_name']}" # noqa E501
     
 
     class Config:
